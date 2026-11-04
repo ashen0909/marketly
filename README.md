@@ -2,7 +2,19 @@
 
 A modular **Next.js 16 / React 19 / TypeScript / Tailwind CSS 4 / shadcn/ui-style** marketplace foundation based on the approved Graphite + Brass Gold homepage design. This updated package adds a verified email-confirmation route and local database diagnostics.
 
-**Start here:** Read [`SETUP-SINHALA.md`](SETUP-SINHALA.md) for the exact Supabase + MacBook setup steps. Copy `.env.example` to `.env.local`, set real project URL and publishable key, apply `supabase/migrations/202611040001_initial_marketplace.sql` to a **new** Supabase project, and run `npm run db:check`. Developer diagnostics: `http://localhost:3000/dev/setup` (development mode only).
+## Quick start
+
+1. Create a Supabase project and apply the SQL files in [`supabase/migrations/`](supabase/migrations/) in filename order.
+2. Copy `.env.example` to `.env.local` and set your Supabase project URL, publishable key, and server-only secret key. Never commit `.env.local` or expose the secret key in a `NEXT_PUBLIC_*` variable.
+3. Install dependencies and start the app:
+
+   ```bash
+   npm install
+   npm run db:check
+   npm run dev
+   ```
+
+4. Open `http://localhost:3000`. For database diagnostics, visit `http://localhost:3000/dev/setup` in development mode.
 
 ## Git branching workflow
 
@@ -103,7 +115,7 @@ For real accounts and listings:
 1. In Supabase, create a **new** project.
 2. In SQL Editor apply `supabase/migrations/202611040001_initial_marketplace.sql`.
 3. Copy your Project URL and **public/publishable (anon) key** to `.env.local`. Never put the service-role key in the frontend or `.env.example`.
-4. Configure **Auth Site URL** as `http://localhost:3000`, allow both `/auth/confirm` and `/auth/callback`, then change the **Confirm signup** email template to `<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email">Confirm account</a>`. For detail see `SETUP-SINHALA.md`. Note that live email confirmations need dependable SMTP configuration.
+4. Configure **Auth Site URL** as `http://localhost:3000`, allow both `/auth/confirm` and `/auth/callback`, then change the **Confirm signup** email template to `<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email">Confirm account</a>`. Live email confirmations need dependable SMTP configuration.
 5. `npm run db:check` to confirm tables are accessible; `npm run dev`, visit `/dev/setup`, sign up, confirm email, and publish with 1–5 photos.
 6. `npm run typecheck && npm run lint && npm run test:pricing && npm run build` before deployment.
 
