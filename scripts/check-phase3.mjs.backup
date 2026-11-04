@@ -1,0 +1,15 @@
+/** Marketly Phase03: Check the new schema using a public/publishable key only. */
+import { createClient } from '@supabase/supabase-js';
+const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
+const key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+if (!url || !key) { console.error('Missing Supabase URL or public key in .env.local'); process.exit(1); }
+const supabase=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
+let failed=false;
+for (const [table,field] of [['conversations','id'],['messages','id'],['offers','id'],['notifications','id'],['favorites','listing_id']]) {
+  const {error,count}=await supabase.from(table).select(field,{head:true,count:'exact'});
+  if (error) { console.error(`❌ ${table}: ${error.message}`); failed=true; }
+  else if ((count ?? 0) !== 0) { console.error(`❌ ${table}: anonymous key can count ${count} rows; review grants and RLS!`); failed=true; }
+  else console.log(`✅ ${table}: API reachable; anonymous count = 0`);
+}
+if (failed) { console.error('Run migration 003 in the correct Supabase project.'); process.exitCode=1; }
+else console.log('✅ Phase 03 schema is reachable. Still test authorization with two different real users.');

@@ -1,0 +1,66 @@
+/**
+ * Marketly Phase 03 health check.
+ * Run: node --env-file=.env.local scripts/check-phase3.mjs
+ * Uses the server-only credential to verify the tables exist, then confirms
+ * that an anonymous user is DENIED direct table reads (required by migration 003).
+ * NEVER import or run this script from client-side code.
+ */
+import { createClient } from '@supabase/supabase-js';
+
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+const publicKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
+const serverKey = (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)?.trim();
+
+if (!url || !publicKey || !serverKey) {
+  console.error('❌ Missing Supabase URL, publishable key, or server-only secret in .env.local.');
+  process.exit(1);
+}
+if (/YOUR-|PLACEHOLDER|EXAMPLE/i.test(url + publicKey + serverKey)) {
+  console.error('❌ Replace placeholder Supabase credentials in .env.local.');
+  process.exit(1);
+}
+
+const options = { auth: { persistSession: false, autoRefreshToken: false } };
+const admin = createClient(url, serverKey, options);
+const anonymous = createClient(url, publicKey, options);
+const tables = ['conversations', 'messages', 'offers', 'notifications', 'favorites'];
+let failed = false;
+
+function describe(error) {
+  return [error?.code, error?.message || error?.details].filter(Boolean).join(' | ') || 'Unknown API error';
+}
+
+for (const table of tables) {
+  try {
+    // Migration 003 intentionally revokes anonymous SELECT. Using the anonymous
+    // key as the only test would falsely report that all five tables are absent.
+    const { error: adminError } = await admin.from(table).select('*', { head: true }).limit(1);
+    if (adminError) {
+      console.error(`❌ ${table}: server-side table check failed — ${describe(adminError)}`);
+      failed = true;
+      continue;
+    }
+
+    const { error: anonError } = await anonymous.from(table).select('*', { head: true }).limit(1);
+    if (!anonError) {
+      console.error(`❌ ${table}: anonymous direct SELECT unexpectedly allowed; review migration 003 grants.`);
+      failed = true;
+    } else if (anonError.code === '42501' || /permission denied/i.test(anonError.message || '')) {
+      console.log(`✅ ${table}: exists (server check passed); anonymous SELECT denied as expected`);
+    } else {
+      console.error(`❌ ${table}: unexpected anonymous API error — ${describe(anonError)}`);
+      failed = true;
+    }
+  } catch (error) {
+    console.error(`❌ ${table}: connection or request failed — ${error instanceof Error ? error.message : String(error)}`);
+    failed = true;
+  }
+}
+
+if (failed) {
+  console.error('❌ Phase 03 check failed. Review the detailed error above; do not rerun migrations blindly.');
+  process.exitCode = 1;
+} else {
+  console.log('✅ Phase 03 tables and anonymous-access protections verified.');
+  console.log('Next: test real user permissions and chat using two separate signed-in accounts.');
+}

@@ -1,0 +1,33 @@
+@import "tailwindcss";
+:root {
+  --market-graphite: #24272e;
+  --market-gold: #b88746;
+  --market-cream: #f6f5f2;
+  --market-sand: #ddd5c8;
+  --background: #ffffff;
+  --foreground: #24272e;
+  color-scheme: light;
+}
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--market-gold);
+  --color-secondary: var(--market-graphite);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: #fff; color: var(--market-graphite); font-family: Arial, Helvetica, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+a { text-decoration: none; }
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+::selection { background: #efd2a6; color: #24272e; }
+:focus-visible { outline: 2px solid #b88746; outline-offset: 3px; }
+.hero-bg { background: linear-gradient(115deg, #fffaf2 0%, #fbf8f3 45%, #f3e8d6 100%); }
+.hero-text { letter-spacing: -0.045em; }
+.field-label { display: block; font-size: .88rem; font-weight: 650; margin-bottom: .45rem; color: #33373c; }
+.field-control { width: 100%; border: 1px solid #e0dacf; border-radius: .8rem; background: #fff; padding: .8rem 1rem; min-height: 3rem; }
+.field-control:focus { outline: 2px solid #c69a56; border-color: transparent; }
+.field-help { font-size: .78rem; color: #68707c; margin-top: .3rem; }
+.error-text { border: 1px solid #fecaca; background: #fef2f2; border-radius: .7rem; padding: .7rem 1rem; color: #9f1239; font-size: .86rem; }
+.success-text { border: 1px solid #b6e3ce; background: #ecfdf5; border-radius: .7rem; padding: .7rem 1rem; color: #166534; font-size: .86rem; }
