@@ -4,6 +4,69 @@ A modular **Next.js 16 / React 19 / TypeScript / Tailwind CSS 4 / shadcn/ui-styl
 
 **Start here:** Read [`SETUP-SINHALA.md`](SETUP-SINHALA.md) for the exact Supabase + MacBook setup steps. Copy `.env.example` to `.env.local`, set real project URL and publishable key, apply `supabase/migrations/202611040001_initial_marketplace.sql` to a **new** Supabase project, and run `npm run db:check`. Developer diagnostics: `http://localhost:3000/dev/setup` (development mode only).
 
+## Git branching workflow
+
+Keep `main` stable and ready for production. Use `develop` to combine and test completed work before it goes to `main`. Create a short-lived branch for each feature or fix; avoid committing feature work directly to `main`.
+
+### One-time setup
+
+The shared `develop` branch needs to exist on GitHub before other computers can check it out:
+
+```bash
+git switch develop
+git push -u origin develop
+```
+
+### New feature or regular bug fix
+
+Start from the latest `develop` branch. Use `feature/` for new functionality and `fix/` for a non-urgent bug fix:
+
+```bash
+git switch develop
+git pull --ff-only origin develop
+git switch -c feature/search-filters
+```
+
+When the work is ready, commit and push that branch, then open a GitHub Pull Request into `develop`:
+
+```bash
+git add <files-you-changed>
+git commit -m "Add listing search filters"
+git push -u origin feature/search-filters
+```
+
+For a regular bug fix, use a name such as `fix/listing-image-upload` and open its Pull Request into `develop`.
+
+### Urgent production fix
+
+Create a `hotfix/` branch from `main`, so the fix does not include unfinished work from `develop`:
+
+```bash
+git switch main
+git pull --ff-only origin main
+git switch -c hotfix/login-redirect
+```
+
+Commit and push the fix, then open a Pull Request into `main`:
+
+```bash
+git add <files-you-changed>
+git commit -m "Fix login redirect"
+git push -u origin hotfix/login-redirect
+```
+
+After the hotfix is merged into `main`, open another Pull Request from `main` into `develop` so both branches include the fix.
+
+### Branch names at a glance
+
+| Work | Branch example | Merge into |
+|---|---|---|
+| New feature | `feature/search-filters` | `develop` |
+| Regular bug fix | `fix/listing-image-upload` | `develop` |
+| Urgent production fix | `hotfix/login-redirect` | `main`, then sync `main` into `develop` |
+
+Never commit `.env.local`, passwords, or Supabase secret/service-role keys. `.env.local` is ignored by Git; use `.env.example` for safe placeholders only.
+
 ## What is implemented in source code
 
 - Mobile-first landing page, browse/search/filter, product detail pages and transparent membership prices.
