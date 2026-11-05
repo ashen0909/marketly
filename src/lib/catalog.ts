@@ -126,12 +126,18 @@ export async function getMyListings(userId: string): Promise<Listing[]> {
   return attachPublicDetails(supabase, (data ?? []) as Array<Record<string, unknown>>);
 }
 
-export async function getMyListingsPage(userId: string, page: number): Promise<{ listings: Listing[]; total: number }> {
+export async function getMyListingsPage(userId: string, page: number, statusFilter = "all", search = ""): Promise<{ listings: Listing[]; total: number }> {
   if (!hasSupabaseConfig()) return { listings: [], total: 0 };
   const supabase = await createServerSupabase();
   const { from, to } = pageRange(page);
-  const { data, count, error } = await supabase.from("listings").select(LISTING_COLUMNS, { count: "exact" })
-    .eq("seller_id", userId).neq("status", "deleted").order("published_at", { ascending: false }).range(from, to);
+  let query = supabase.from("listings").select(LISTING_COLUMNS, { count: "exact" }).eq("seller_id", userId);
+  if (statusFilter === "deleted") query = query.eq("status", "deleted");
+  else if (statusFilter === "sold") query = query.eq("status", "sold");
+  else if (statusFilter === "paused") query = query.eq("status", "removed");
+  else if (["pending", "rejected", "approved"].includes(statusFilter)) query = query.eq("status", "active").eq("moderation_status", statusFilter);
+  else query = query.neq("status", "deleted");
+  if (search.trim()) query = query.ilike("title", `%${search.trim().replaceAll("%", "").replaceAll("_", "")}%`);
+  const { data, count, error } = await query.order("published_at", { ascending: false }).range(from, to);
   if (error) { reportDbError("load seller dashboard page", error); return { listings: [], total: 0 }; }
   return { listings: await attachPublicDetails(supabase, (data ?? []) as Array<Record<string, unknown>>), total: count ?? 0 };
 }

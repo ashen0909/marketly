@@ -19,6 +19,10 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   const result=schema.safeParse({title:form.get("title"),description:form.get("description"),price:form.get("price"),
     category:form.get("category"),location:form.get("location"),condition:form.get("condition"),is_negotiable:form.get("is_negotiable")==="true"});
   if(!result.success)return fail(result.error.issues[0]?.message||"Invalid fields");
+  const { data: duplicates } = await db.from("listings").select("id,title")
+    .eq("seller_id", user.id).neq("id", id).neq("status", "deleted").limit(500);
+  if ((duplicates ?? []).some(row => row.title.trim().toLocaleLowerCase("en") === result.data.title.trim().toLocaleLowerCase("en")))
+    return fail("You already have another active ad with this title.",409);
   const files=form.getAll("images");if(files.some(f=>!(f instanceof File)))return fail("Invalid photos");
   if(files.length)try{validateImageFiles(files as File[]);}catch(e){return fail(e instanceof Error?e.message:"Invalid photos");}
   const {data:oldPhotos}=files.length?await db.from("listing_images").select("storage_path,preview_storage_path").eq("listing_id",id):{data:null};
