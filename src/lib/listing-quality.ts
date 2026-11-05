@@ -29,6 +29,7 @@ export function listingFieldIssues(input: {
   condition: string;
   location: string;
   photoCount: number;
+  maxPhotoCount?: number;
   duplicate?: boolean;
 }): ListingFieldIssues {
   const issues: ListingFieldIssues = {};
@@ -49,7 +50,7 @@ export function listingFieldIssues(input: {
   if (description.length < 20) issues.description = error("Description needs at least 20 characters. Add condition and product details.");
   else if (description.length > 2500) issues.description = error("Description must be 2,500 characters or fewer.");
   if (input.photoCount < 1) issues.photos = error("Add at least one product photo before submitting.");
-  else if (input.photoCount > 5) issues.photos = error("Only five photos can be published until real paid photos launch.");
+  else if (input.photoCount > (input.maxPhotoCount??5)) issues.photos = error(`Maximum ${input.maxPhotoCount??5} photos for this account.`);
   return issues;
 }
 

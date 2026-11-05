@@ -3,8 +3,8 @@ import { createMarketlyWatermarkedJpeg } from "@/lib/images/watermark";
 import { createMarketlyPreviewJpeg } from "@/lib/images/preview";
 import { marketlyConfig } from "@/lib/config";
 
-export function validateImageFiles(images: File[]) {
-  if (images.length<1 || images.length>5) throw new Error("Use 1–5 free photos. Extra-photo payments are not available yet.");
+export function validateImageFiles(images: File[], limit = 5) {
+  if (images.length<1 || images.length>limit) throw new Error(`Use 1–${limit} photos for your account.`);
   for (const image of images) {
     if (!(marketlyConfig.imageMimeTypes as readonly string[]).includes(image.type) || image.size<1 || image.size>marketlyConfig.maxImageBytes)
       throw new Error("Use JPG/PNG/WEBP photos up to 5MB each.");

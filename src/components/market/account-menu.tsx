@@ -2,17 +2,17 @@
 
 import Link from "next/link";
 import { userFacingError } from "@/lib/user-facing-error";
-import { ChevronDown, Heart, LayoutDashboard, LogOut, MessageCircle, UserRound, CreditCard } from "lucide-react";
+import { ChevronDown, Heart, LayoutDashboard, LogOut, MessageCircle, UserRound, CreditCard, Crown, ShieldCheck } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 
-type AccountMenuProps = { displayName: string; email: string };
+type AccountMenuProps = { displayName: string; email: string; adminRole?: "owner" | "sub_admin" | "user" };
 function initials(name: string) {
   return name.trim().split(/\s+/).slice(0, 2).map(p => p[0]?.toUpperCase() ?? "").join("") || "M";
 }
 
-export function AccountMenu({ displayName, email }: AccountMenuProps) {
+export function AccountMenu({ displayName, email, adminRole="user" }: AccountMenuProps) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -56,6 +56,8 @@ export function AccountMenu({ displayName, email }: AccountMenuProps) {
     </button>
     {open && <div className="fixed inset-x-3 top-[68px] z-[70] max-h-[calc(100dvh-8rem)] w-auto overflow-y-auto overscroll-contain rounded-2xl border border-[#EAE2D8] bg-white p-2 text-[#24272E] shadow-[0_14px_50px_rgba(0,0,0,.22)] sm:absolute sm:inset-x-auto sm:right-0 sm:top-[calc(100%+12px)] sm:max-h-[min(75dvh,32rem)] sm:w-80">
       <div className="border-b border-stone-100 px-3 py-3"><p className="truncate text-sm font-bold">{displayName}</p><p className="truncate text-xs text-[#68707C]">{email}</p></div>
+      {adminRole!=="user"&&<Link onClick={close} href="/admin" className={`${itemClass} border border-[#E1CAA2] bg-[#FFFAF0] font-bold text-[#80591E]`}>{adminRole==="owner"?<Crown className="size-4"/>:<ShieldCheck className="size-4"/>}{adminRole==="owner"?"Owner / Super Admin Dashboard":"Sub Admin Dashboard"}</Link>}
+      {adminRole==="owner"&&<Link onClick={close} href="/admin/sub-admins" className={itemClass}><ShieldCheck className="size-4"/>Manage Sub Admins</Link>}
       <Link onClick={close} href="/profile" className={itemClass}><UserRound className="size-4"/>My profile</Link>
       <Link onClick={close} href="/dashboard" className={itemClass}><LayoutDashboard className="size-4"/>My ads / Dashboard</Link>
       <Link onClick={close} href="/billing" className={itemClass}><CreditCard className="size-4"/>Test checkout / Billing</Link>

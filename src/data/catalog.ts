@@ -31,6 +31,7 @@ export type Listing = {
   image_urls: string[];
   published_at: string;
   expires_at?: string | null;
+  owner_boost_until?: string | null;
   sample?: boolean;
 };
 

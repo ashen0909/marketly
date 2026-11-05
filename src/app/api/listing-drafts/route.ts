@@ -14,7 +14,7 @@ type StoredDraft = { image_paths: string[]; preview_paths: string[] };
 export async function POST(request: Request) {
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin) return fail("Cross-origin request blocked", 403);
-  if (Number(request.headers.get("content-length") || 0) > 28 * 1024 * 1024) return fail("Upload too large", 413);
+  if (Number(request.headers.get("content-length") || 0) > 65 * 1024 * 1024) return fail("Upload too large", 413);
   const db = await createServerSupabase();
   const { data: { user } } = await db.auth.getUser();
   if (!user) return fail("Sign in before saving drafts", 401);
@@ -44,7 +44,9 @@ export async function POST(request: Request) {
   const incoming = form.getAll("images");
   if (incoming.some(x => !(x instanceof File))) return fail("Invalid image upload");
   const files = incoming as File[];
-  if (files.length) { try { validateImageFiles(files); } catch(e) { return fail(e instanceof Error ? e.message : "Invalid images"); } }
+  const { data: ownerFree } = await db.rpc("marketly_is_owner");
+  const photoLimit = ownerFree ? 12 : 5;
+  if (files.length) { try { validateImageFiles(files, photoLimit); } catch(e) { return fail(e instanceof Error ? e.message : "Invalid images"); } }
   let order: PhotoOrderItem[];
   try {
     const raw = field(form, "photo_order");
@@ -52,7 +54,7 @@ export async function POST(request: Request) {
       ...(old?.image_paths ?? []).map(path => ({ kind: "existing" as const, path })),
       ...files.map((_, index) => ({ kind: "new" as const, index }))
     ];
-    if (!Array.isArray(order) || order.length > 5) throw new Error("Maximum five photos per draft.");
+    if (!Array.isArray(order) || order.length > photoLimit) throw new Error(`Maximum ${photoLimit} photos per draft.`);
     const unique = new Set<string>();
     for (const item of order) {
       if (!item || typeof item !== "object") throw new Error("Invalid photo order");
