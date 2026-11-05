@@ -6,6 +6,7 @@ import { getListings } from "@/lib/catalog";
 import { ListingCard } from "@/components/market/listing-card";
 import { CategoryIcon } from "@/components/market/category-icon";
 import { buttonVariants } from "@/components/ui/button";
+import { RecentlyViewedSection } from "@/components/market/smart-listing-actions";
 
 export default async function HomePage() {
   const { listings, sample, error } = await getListings();
@@ -48,5 +49,6 @@ export default async function HomePage() {
       {listings.length ? <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">{listings.slice(0, 8).map((listing) => <ListingCard key={listing.id} listing={listing}/>)}</div> : <div className="rounded-2xl border border-dashed p-8 text-center text-[#68707C]">No published listings yet. Be the first seller!</div>}
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-xs text-[#68707C]"><BadgeCheck className="size-4" /> Clear pricing <CheckCircle2 className="size-4" /> No hidden seller commission <MapPin className="size-4" /> Across Sri Lanka</div>
     </section>
+    <RecentlyViewedSection />
   </>;
 }

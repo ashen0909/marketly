@@ -30,6 +30,7 @@ export type Listing = {
   preview_urls?: string[];
   image_urls: string[];
   published_at: string;
+  expires_at?: string | null;
   sample?: boolean;
 };
 
