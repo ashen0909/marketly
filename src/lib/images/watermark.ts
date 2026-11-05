@@ -14,7 +14,7 @@ export async function createMarketlyWatermarkedJpeg(file: File): Promise<Buffer>
   }
   // Resize before compositing to put a ceiling on storage and processing cost.
   const resized = await source.rotate().resize({ width: 1800, height: 1800, fit: "inside", withoutEnlargement: true })
-    .flatten({ background: "#ffffff" }).jpeg({ quality: 85 }).toBuffer();
+    .flatten({ background: "#ffffff" }).jpeg({ quality: 83, progressive: true }).toBuffer();
   const { width, height } = await sharp(resized).metadata();
   if (!width || !height) throw new Error("Could not read photo dimensions.");
 
@@ -35,7 +35,7 @@ export async function createMarketlyWatermarkedJpeg(file: File): Promise<Buffer>
     <text x="${x + labelWidth / 2}" y="${y + labelHeight / 2}" dominant-baseline="middle" text-anchor="middle"
       font-family="Arial, Helvetica, sans-serif" font-size="${cornerSize}" font-weight="bold" fill="#ffffff">Marketly</text>
   </svg>`);
-  const output = await sharp(resized).composite([{ input: svg }]).jpeg({ quality: 82, mozjpeg: true }).toBuffer();
+  const output = await sharp(resized).composite([{ input: svg }]).jpeg({ quality: 80, mozjpeg: true, progressive: true }).toBuffer();
   if (output.byteLength > 5 * 1024 * 1024) throw new Error("Processed photo is too large. Please choose a smaller photo.");
   return output;
 }

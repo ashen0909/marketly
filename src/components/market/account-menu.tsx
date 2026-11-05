@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown, Heart, LayoutDashboard, LogOut, MessageCircle, Settings, UserRound, CreditCard } from "lucide-react";
+import { ChevronDown, Heart, LayoutDashboard, LogOut, MessageCircle, UserRound, CreditCard } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
@@ -46,17 +46,16 @@ export function AccountMenu({ displayName, email }: AccountMenuProps) {
   }
   const itemClass = "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm hover:bg-[#F8F5EE] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#B88746]";
   const close = () => setOpen(false);
-  return <div className="relative" ref={root} data-testid="account-menu">
+  return <div className="relative z-[60] shrink-0" ref={root} data-testid="account-menu">
     <button type="button" onClick={() => setOpen(v => !v)} aria-expanded={open} aria-haspopup="true" aria-label={`Account menu for ${displayName}`}
       className="flex max-w-[100px] items-center gap-2 rounded-full border border-white/20 bg-white/10 py-1.5 pl-1.5 pr-2.5 text-sm hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D0A352] sm:max-w-40">
       <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#D0A352] text-xs font-extrabold text-[#24272E]" aria-hidden="true">{initials(displayName)}</span>
       <span className="hidden min-w-0 truncate font-semibold min-[470px]:inline">{displayName}</span>
       <ChevronDown className={`size-3.5 shrink-0 transition ${open ? "rotate-180" : ""}`} aria-hidden="true" />
     </button>
-    {open && <div className="absolute right-0 top-[calc(100%+12px)] z-50 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[#EAE2D8] bg-white p-2 text-[#24272E] shadow-[0_14px_50px_rgba(0,0,0,.22)]">
+    {open && <div className="fixed inset-x-3 top-[68px] z-[70] max-h-[calc(100dvh-8rem)] w-auto overflow-y-auto overscroll-contain rounded-2xl border border-[#EAE2D8] bg-white p-2 text-[#24272E] shadow-[0_14px_50px_rgba(0,0,0,.22)] sm:absolute sm:inset-x-auto sm:right-0 sm:top-[calc(100%+12px)] sm:max-h-[min(75dvh,32rem)] sm:w-80">
       <div className="border-b border-stone-100 px-3 py-3"><p className="truncate text-sm font-bold">{displayName}</p><p className="truncate text-xs text-[#68707C]">{email}</p></div>
       <Link onClick={close} href="/profile" className={itemClass}><UserRound className="size-4"/>My profile</Link>
-      <Link onClick={close} href="/profile" className={itemClass}><Settings className="size-4"/>Profile settings</Link>
       <Link onClick={close} href="/dashboard" className={itemClass}><LayoutDashboard className="size-4"/>My ads / Dashboard</Link>
       <Link onClick={close} href="/billing" className={itemClass}><CreditCard className="size-4"/>Test checkout / Billing</Link>
       <Link onClick={close} href="/messages" className={itemClass}><MessageCircle className="size-4"/>Messages / Offers</Link>

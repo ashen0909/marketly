@@ -17,6 +17,20 @@ export function LoginForm({ postLoginPath = "/dashboard" }: { postLoginPath?: st
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const connected = hasSupabaseConfig();
+  async function requestReset() {
+    setError("");setNotice("");
+    if (!email.trim()) {setError("Enter your email address first.");return;}
+    setLoading(true);
+    try {
+      const {error:resetError}=await createBrowserSupabase().auth.resetPasswordForEmail(email.trim(), {
+        redirectTo:`${window.location.origin}/auth/callback?next=/reset-password`,
+      });
+      if(resetError)throw resetError;
+      setNotice("If this email belongs to an account, a password reset link has been requested. Check your inbox.");
+    }catch(e){setError(e instanceof Error?e.message:"Unable to request a password reset");}
+    finally{setLoading(false);}
+  }
+
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(""); setNotice("");
@@ -31,7 +45,7 @@ export function LoginForm({ postLoginPath = "/dashboard" }: { postLoginPath?: st
           email, password,
           options: {
             data: { display_name: name.trim() },
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=/profile`,
           },
         });
         if (authError) throw authError;
@@ -40,13 +54,13 @@ export function LoginForm({ postLoginPath = "/dashboard" }: { postLoginPath?: st
         const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
         if (authError) throw authError;
       }
-      router.replace(postLoginPath); router.refresh();
+      router.replace(mode === "register" ? "/profile?welcome=1" : postLoginPath); router.refresh();
     } catch (err) { setError(err instanceof Error ? err.message : "Could not sign in."); }
     finally { setLoading(false); }
   }
 
   return <div className="mx-auto max-w-md rounded-2xl border border-stone-200 bg-white p-7 shadow-sm">
-    <div className="mb-7 text-center"><div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-[#FBF2E4] text-[#AA782C]"><ShieldCheck className="size-8"/></div><h1 className="text-2xl font-extrabold">{mode === "sign-in" ? "Welcome back" : "Create your account"}</h1><p className="mt-2 text-sm text-[#68707C]">One account for buying and selling.</p></div>
+    <div className="mb-7 text-center"><div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-[#FBF2E4] text-[#AA782C]"><ShieldCheck className="size-8"/></div><h1 className="text-2xl font-extrabold">{mode === "sign-in" ? "Welcome back" : "Create your account"}</h1><p className="mt-2 text-sm text-[#68707C]">One account for buying and selling. Complete your profile now or later.</p></div>
     {!connected && <div className="mb-5 rounded-xl bg-[#FFF4DF] p-3 text-sm text-amber-900">Local development preview: connect Supabase to activate real user accounts.</div>}
     <form onSubmit={handleSubmit} className="space-y-4">
       {mode === "register" && <div><label className="field-label" htmlFor="name">Display name</label><div className="relative"><UserRound className="pointer-events-none absolute left-3 top-3.5 size-5 text-stone-400"/><Input id="name" value={name} onChange={e=>setName(e.target.value)} autoComplete="name" maxLength={60} required className="pl-10" placeholder="Your full name"/></div></div>}
@@ -55,6 +69,7 @@ export function LoginForm({ postLoginPath = "/dashboard" }: { postLoginPath?: st
       {error && <p className="error-text" role="alert">{error}</p>}{notice && <p className="success-text" role="status">{notice}</p>}
       <Button type="submit" disabled={loading || !connected} className="w-full">{loading ? "Working..." : mode === "sign-in" ? "Sign In" : "Create Account"}</Button>
     </form>
+    {mode === "sign-in" && <button type="button" disabled={loading || !connected} onClick={()=>{void requestReset();}} className="mt-4 block w-full text-center text-sm font-semibold text-[#9C6F2E] underline">Forgot your password?</button>}
     <p className="mt-6 text-center text-sm text-[#68707C]">{mode === "sign-in" ? "New to Marketly?" : "Already registered?"} <button type="button" onClick={()=>{setMode(mode === "sign-in" ? "register" : "sign-in");setError("");setNotice("");}} className="font-semibold text-[#A3722F]">{mode === "sign-in" ? "Create account" : "Sign in"}</button></p>
     <p className="mt-5 text-center text-xs text-[#68707C]">Your public seller badge is not identity verified by registration alone.</p>
     <Link className="mt-3 block text-center text-sm text-stone-600 underline" href="/">Back to home</Link>

@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabase, hasSupabaseConfig } from "@/lib/supabase/browser";
+import { useMarketlyUi } from "@/components/market/marketly-ui-provider";
 
 type FavoritesContextValue = {
   favorites: ReadonlySet<string>;
@@ -15,6 +16,7 @@ const FavoritesContext = createContext<FavoritesContextValue | null>(null);
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const { toast } = useMarketlyUi();
   const [favorites, setFavorites] = useState<ReadonlySet<string>>(new Set());
   const [signedIn, setSignedIn] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -54,9 +56,9 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       });
       router.refresh();
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : "Could not save this listing.");
+      toast(error instanceof Error ? error.message : "Could not save this listing.", "error");
     } finally { setBusyId(null); }
-  }, [router, signedIn]);
+  }, [router, signedIn, toast]);
 
   const value = useMemo(() => ({ favorites, signedIn, busyId, toggle, refresh }), [favorites, signedIn, busyId, toggle, refresh]);
   return <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>;

@@ -26,9 +26,9 @@ export async function SiteHeader() {
   }
 
   return <header className="bg-[#24272E] text-white">
-    <div className="mx-auto flex h-[74px] max-w-7xl items-center gap-4 px-4 sm:gap-6 sm:px-6">
-      <Link href="/" className="flex shrink-0 items-center gap-3 text-xl font-extrabold tracking-tight" aria-label="Marketly home">
-        <span className="flex size-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#D0A352] to-[#A7752A]"><ShoppingBag className="size-6 text-[#24272E]" /></span>Marketly
+    <div className="mx-auto flex h-[74px] max-w-7xl min-w-0 items-center gap-2 px-3 sm:gap-6 sm:px-6">
+      <Link href="/" className="flex shrink-0 items-center gap-2 text-xl font-extrabold tracking-tight sm:gap-3" aria-label="Marketly home">
+        <span className="flex size-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#D0A352] to-[#A7752A]"><ShoppingBag className="size-6 text-[#24272E]" /></span><span className="hidden min-[365px]:inline">Marketly</span>
       </Link>
       <nav className="hidden items-center gap-6 text-sm font-medium text-white/85 md:flex" aria-label="Main navigation">
         <Link href="/" className="hover:text-[#E4BD76]">Home</Link>
@@ -36,7 +36,7 @@ export async function SiteHeader() {
         <Link href="/membership" className="hover:text-[#E4BD76]">Memberships</Link>
         {isAdmin && <Link href="/admin" className="font-bold text-[#E4BD76]">Admin</Link>}
       </nav>
-      <div className="ml-auto flex items-center gap-2 sm:gap-4">
+      <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-4">
         <Link href="/listings" className="hidden items-center gap-1 text-xs text-white/85 lg:flex"><MapPin className="size-4"/> All Sri Lanka</Link>
         <Link href={account ? "/favorites" : "/login"} aria-label="Saved items" className="hidden sm:block"><Heart className="size-5" /></Link>
         <Link href={account ? "/messages" : "/login"} aria-label="Messages" className="hidden sm:block"><MessageCircle className="size-5" /></Link>

@@ -1,0 +1,11 @@
+# Marketly secure backups and recovery — Phase 07.1E
+
+GitHub only stores source code. It is NOT a Supabase database or Storage backup.
+
+1. **Back up PostgreSQL:** Use a **separate** local terminal with the Supabase database URI in `SUPABASE_DB_URL` (never in Git). `bash scripts/backup-postgres.sh`. Requires `pg_dump`/`pg_restore` compatible with Supabase PostgreSQL version. Saves a custom-format `.dump` under `~/Downloads/marketly-private-backups`. This archive is sensitive.
+2. **Back up product and profile photos:** `node --env-file=.env.local scripts/backup-storage.mjs` (dry run). Then `node --env-file=.env.local scripts/backup-storage.mjs --execute` to download files. Server secret stays on the local machine, never in the browser or GitHub. Large storage buckets can take time; monitor failures.
+3. **Restore test:** Create a completely SEPARATE, disposable PostgreSQL instance (NEVER target production). Review the archive via `pg_restore --list FILE.dump`. Restore only into that test database using a suitable command such as `pg_restore --dbname="$TEST_DATABASE_URL" --no-owner --no-acl --clean --if-exists FILE.dump`; verify row counts, key foreign keys, profile ownership, moderation status and posting ledgers. Supabase auth/storage schemas may need a dedicated whole-project restoration plan; DO NOT blindly run `--clean` on an active Supabase instance.
+4. **Storage restore:** Uploaded files must be re-uploaded to appropriate bucket **object paths** with correct visibility/RLS; merely restoring DB rows does not restore image bytes. Test a few watermarked image previews, avatars and preserved sold ads in the isolated environment.
+5. **Run deletion cleanup only after verifiable backups:** `node --env-file=.env.local scripts/cleanup-deleted-images.mjs` previews eligible photos. `node --env-file=.env.local scripts/cleanup-deleted-images.mjs --execute --backed-up` removes them. This is MANUAL, not an automatic cron job. Check no failures and verify deleted ads/old chats remain.
+
+**Security:** `~/Downloads/marketly-private-backups` contains real private user data. Restrict device access, encrypt off-device copies, use a retention policy and never attach it to GitHub or support screenshots. Periodically run a full restore drill; backups are only useful when restoration succeeds.
