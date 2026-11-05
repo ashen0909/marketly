@@ -1,5 +1,6 @@
 import { sampleListings, type Listing } from "@/data/catalog";
 import { createServerSupabase, hasSupabaseConfig } from "@/lib/supabase/server";
+import { pageRange } from "@/lib/pagination";
 
 export type ListingFilters = { q?: string; category?: string; location?: string };
 
@@ -8,7 +9,7 @@ type ServerSupabase = Awaited<ReturnType<typeof createServerSupabase>>;
 
 // Keep the main listing request independent of PostgREST relationship embedding.
 // One broken profile/image relationship must not hide every public advertisement.
-const LISTING_COLUMNS = "id,title,description,price_lkr,category,location,condition,status,moderation_status,moderation_note,is_negotiable,seller_id,published_at";
+const LISTING_COLUMNS = "id,title,description,price_lkr,category,location,condition,status,moderation_status,moderation_note,is_negotiable,seller_id,published_at,expires_at";
 
 function reportDbError(operation: string, error: DbError): void {
   // Server logs only: never print API keys, user cookies or private chat content.
@@ -40,6 +41,7 @@ export function toListing(row: Record<string, unknown>, baseUrl: string): Listin
     seller_id: String(row.seller_id), seller_name: seller?.display_name ?? "Marketly Seller", status: row.status as Listing["status"],
     image_urls: images.map((im) => `${baseUrl}/storage/v1/object/public/listing-images/${encodeURI(im.storage_path)}`),
     published_at: String(row.published_at),
+    expires_at: typeof row.expires_at === "string" ? row.expires_at : null,
     is_negotiable: Boolean(row.is_negotiable), moderation_status: (row.moderation_status ?? "approved") as Listing["moderation_status"],
     moderation_note: typeof row.moderation_note === "string" ? row.moderation_note : null,
     preview_urls: images.map((im) => `${baseUrl}/storage/v1/object/public/listing-images/${encodeURI(im.preview_storage_path || im.storage_path)}`),
@@ -79,22 +81,30 @@ async function attachPublicDetails(supabase: ServerSupabase, rows: Array<Record<
   });
 }
 
-export async function getListings(filters: ListingFilters = {}): Promise<{ listings: Listing[]; sample: boolean; error?: string }> {
-  if (!hasSupabaseConfig()) return { listings: filtered(sampleListings, filters), sample: true };
+export async function getListings(filters: ListingFilters = {}, page = 1, pageSize = 48): Promise<{
+  listings: Listing[]; sample: boolean; total: number; error?: string;
+}> {
+  if (!hasSupabaseConfig()) {
+    const all = filtered(sampleListings, filters);
+    const { from, to } = pageRange(page, pageSize);
+    return { listings: all.slice(from, to + 1), sample: true, total: all.length };
+  }
   const supabase = await createServerSupabase();
-  const {data:{user}} = await supabase.auth.getUser();
-  let query = supabase.from("listings").select(LISTING_COLUMNS)
-    .eq("status", "active").eq("moderation_status", "approved").order("published_at", { ascending: false }).limit(48);
-  if (user) query = query.neq("seller_id", user.id); // seller manages own ads in dashboard
+  const { data: { user } } = await supabase.auth.getUser();
+  const { from, to } = pageRange(page, pageSize);
+  let query = supabase.from("listings").select(LISTING_COLUMNS, { count: "exact" })
+    .eq("status", "active").eq("moderation_status", "approved")
+    .order("published_at", { ascending: false }).range(from, to);
+  if (user) query = query.neq("seller_id", user.id);
   if (filters.category && filters.category !== "All") query = query.eq("category", filters.category);
   if (filters.location && filters.location !== "All Sri Lanka") query = query.eq("location", filters.location);
   if (filters.q?.trim()) query = query.ilike("title", `%${filters.q.trim().replaceAll("%", "").replaceAll("_", "")}%`);
-  const { data, error } = await query;
+  const { data, error, count } = await query;
   if (error) {
     reportDbError("load active listings", error);
-    return { listings: [], sample: false, error: "Could not load listings. Check the Next.js terminal for the specific database error." };
+    return { listings: [], sample: false, total: 0, error: "Could not load listings. Check the Next.js terminal for the database error." };
   }
-  return { listings: await attachPublicDetails(supabase, (data ?? []) as Array<Record<string, unknown>>), sample: false };
+  return { listings: await attachPublicDetails(supabase, (data ?? []) as Array<Record<string, unknown>>), sample: false, total: count ?? 0 };
 }
 
 export async function getListing(id: string): Promise<Listing | null> {
@@ -116,29 +126,42 @@ export async function getMyListings(userId: string): Promise<Listing[]> {
   return attachPublicDetails(supabase, (data ?? []) as Array<Record<string, unknown>>);
 }
 
-export async function getSellerActiveListings(sellerId: string): Promise<Listing[]> {
-  if (!hasSupabaseConfig()) return [];
+export async function getMyListingsPage(userId: string, page: number): Promise<{ listings: Listing[]; total: number }> {
+  if (!hasSupabaseConfig()) return { listings: [], total: 0 };
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase.from("listings").select(LISTING_COLUMNS)
-    .eq("seller_id", sellerId).eq("status", "active").eq("moderation_status", "approved")
-    .order("published_at", { ascending: false }).limit(100);
-  if (error) { reportDbError("load seller's public listings", error); return []; }
-  return attachPublicDetails(supabase, (data ?? []) as Array<Record<string, unknown>>);
+  const { from, to } = pageRange(page);
+  const { data, count, error } = await supabase.from("listings").select(LISTING_COLUMNS, { count: "exact" })
+    .eq("seller_id", userId).neq("status", "deleted").order("published_at", { ascending: false }).range(from, to);
+  if (error) { reportDbError("load seller dashboard page", error); return { listings: [], total: 0 }; }
+  return { listings: await attachPublicDetails(supabase, (data ?? []) as Array<Record<string, unknown>>), total: count ?? 0 };
 }
 
-export async function getFavoriteListings(userId: string): Promise<{ listings: Listing[]; error?: string }> {
-  if (!hasSupabaseConfig()) return { listings: [] };
+export async function getSellerActiveListings(sellerId: string, page = 1): Promise<{ listings: Listing[]; total: number }> {
+  if (!hasSupabaseConfig()) return { listings: [], total: 0 };
   const supabase = await createServerSupabase();
-  const { data: rows, error } = await supabase.from("favorites")
-    .select("listing_id,created_at").eq("user_id", userId)
-    .order("created_at", { ascending: false }).limit(100);
-  if (error) { reportDbError("load favorites", error); return { listings: [], error: "Cannot load favorites" }; }
+  const { from, to } = pageRange(page);
+  const { data, count, error } = await supabase.from("listings").select(LISTING_COLUMNS, { count: "exact" })
+    .eq("seller_id", sellerId).eq("status", "active").eq("moderation_status", "approved")
+    .order("published_at", { ascending: false }).range(from, to);
+  if (error) { reportDbError("load seller's public listings", error); return { listings: [], total: 0 }; }
+  return { listings: await attachPublicDetails(supabase, (data ?? []) as Array<Record<string, unknown>>), total: count ?? 0 };
+}
+
+export async function getFavoriteListings(userId: string, page = 1): Promise<{ listings: Listing[]; total: number; error?: string }> {
+  if (!hasSupabaseConfig()) return { listings: [], total: 0 };
+  const supabase = await createServerSupabase();
+  const { from, to } = pageRange(page);
+  const { data: rows, count, error } = await supabase.from("favorites")
+    .select("listing_id,created_at", { count: "exact" }).eq("user_id", userId)
+    .order("created_at", { ascending: false }).range(from, to);
+  if (error) { reportDbError("load favorites", error); return { listings: [], total: 0, error: "Cannot load favorites" }; }
   const ids = (rows ?? []).map((row) => row.listing_id);
-  if (!ids.length) return { listings: [] };
+  if (!ids.length) return { listings: [], total: count ?? 0 };
   const { data, error: listingError } = await supabase.from("listings").select(LISTING_COLUMNS)
-    .in("id", ids).eq("status", "active").eq("moderation_status", "approved");
-  if (listingError) { reportDbError("load favorite listings", listingError); return { listings: [], error: "Cannot load favorite listings" }; }
+    .in("id", ids).eq("status", "active").eq("moderation_status", "approved")
+    .gt("expires_at", new Date().toISOString());
+  if (listingError) { reportDbError("load favorite listings", listingError); return { listings: [], total: 0, error: "Cannot load favorite listings" }; }
   const sorted = new Map(ids.map((id, i) => [id, i]));
-  return { listings: (await attachPublicDetails(supabase, (data ?? []) as Array<Record<string, unknown>>))
+  return { total: count ?? 0, listings: (await attachPublicDetails(supabase, (data ?? []) as Array<Record<string, unknown>>))
     .sort((a, b) => (sorted.get(a.id) ?? 0) - (sorted.get(b.id) ?? 0)) };
 }
