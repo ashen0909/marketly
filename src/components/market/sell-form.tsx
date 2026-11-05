@@ -21,6 +21,7 @@ export function SellForm({ canPublish, quotaUsed, draft, existingTitles = [] }: 
   canPublish: boolean; quotaUsed: number; draft?: SavedDraft | null; existingTitles?: string[];
 }) {
   const router = useRouter();
+  const savedSnapshot = useRef<string>(JSON.stringify({title:draft?.title??"",description:draft?.description??"",price:draft?.price_lkr??0,category:draft?.category??"",location:draft?.location??"",condition:draft?.condition??"",negotiable:!!draft?.is_negotiable,photoIds:draft?.image_paths??[]}));
   const formRef = useRef<HTMLFormElement>(null);
   const urlsRef = useRef<string[]>([]);
   const [photos, setPhotos] = useState<Photo[]>(() => (draft?.image_paths ?? []).map((path, index) => ({
@@ -41,6 +42,13 @@ export function SellForm({ canPublish, quotaUsed, draft, existingTitles = [] }: 
   const [attempted, setAttempted] = useState(false);
   const [touched, setTouched] = useState<Partial<Record<ListingFieldName, boolean>>>({});
   const [preview, setPreview] = useState(false);
+  const currentSnapshot = JSON.stringify({title,description,price,category,location,condition,negotiable,photoIds:photos.map(item=>item.kind==="existing"?item.path:item.id)});
+  useEffect(()=>{
+    if(currentSnapshot===savedSnapshot.current)return;
+    const warn=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue="";};
+    window.addEventListener("beforeunload",warn);
+    return ()=>window.removeEventListener("beforeunload",warn);
+  },[currentSnapshot]);
   const remaining = Math.max(0, marketlyConfig.freeAdsPerCalendarMonth - quotaUsed);
   const duplicate = useMemo(() => existingTitles.some(item => sameTitle(item, title)), [existingTitles, title]);
   const issues = useMemo(() => listingFieldIssues({
@@ -98,6 +106,7 @@ export function SellForm({ canPublish, quotaUsed, draft, existingTitles = [] }: 
     setBusy("save");setError("");setSaved("");
     try {
       const id = await saveDraft();
+      savedSnapshot.current=currentSnapshot;
       setSaved("Draft saved with selected photos. No posting quota used.");
       router.replace(`/sell/new?draft=${id}`, { scroll: false });router.refresh();
     } catch (e) { setError(e instanceof Error ? e.message : "Could not save draft"); }

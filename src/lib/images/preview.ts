@@ -7,5 +7,5 @@ export async function createMarketlyPreviewJpeg(file: File): Promise<Buffer> {
   const meta = await input.metadata();
   if (!meta.format || !["jpeg", "png", "webp"].includes(meta.format)) throw new Error("Unsupported image type");
   return input.rotate().resize({ width: 960, height: 960, fit: "inside", withoutEnlargement: true })
-    .flatten({ background: "#ffffff" }).jpeg({ quality: 80 }).toBuffer();
+    .flatten({ background: "#ffffff" }).jpeg({ quality: 76, progressive: true, mozjpeg: true }).toBuffer();
 }

@@ -1,5 +1,5 @@
 "use client";
-import {useRef,useState,type FormEvent,type ChangeEvent} from "react";
+import {useEffect,useRef,useState,type FormEvent,type ChangeEvent} from "react";
 import {useRouter} from "next/navigation";
 import Image from "next/image";
 import {ArrowLeft,ArrowRight,Eye,Save,Trash2} from "lucide-react";
@@ -14,6 +14,7 @@ import {publicListingImageUrl} from "@/lib/listing-drafts";
 type OldPhoto={storage_path:string;preview_storage_path:string|null};
 export function EditListingForm({listing,oldPhotos,existingTitles=[]}:{listing:Listing;oldPhotos:OldPhoto[];existingTitles?:string[]}){
  const router=useRouter();const [files,setFiles]=useState<File[]>([]);
+ const savedSnapshot=useRef("");
  const formRef=useRef<HTMLFormElement>(null);
  const [attempted,setAttempted]=useState(false);
  const [touched,setTouched]=useState<Partial<Record<ListingFieldName,boolean>>>({});
@@ -25,6 +26,14 @@ export function EditListingForm({listing,oldPhotos,existingTitles=[]}:{listing:L
  const [price,setPrice]=useState(listing.price_lkr);
  const [location,setLocation]=useState(listing.location);const [category,setCategory]=useState(listing.category);
  const [condition,setCondition]=useState(listing.condition);
+ const currentSnapshot=JSON.stringify({title,description,price,location,category,condition,photos:photos.map(p=>p.storage_path),files:files.map(f=>f.name+":"+f.size)});
+ useEffect(()=>{
+   if(!savedSnapshot.current){savedSnapshot.current=currentSnapshot;return;}
+   if(savedSnapshot.current===currentSnapshot)return;
+   const warn=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue="";};
+   window.addEventListener("beforeunload",warn);
+   return ()=>window.removeEventListener("beforeunload",warn);
+ },[currentSnapshot]);
  const duplicate=existingTitles.some(t=>sameTitle(t,title));
  const photoChanged=JSON.stringify(photos.map(p=>p.storage_path))!==JSON.stringify(oldPhotos.map(p=>p.storage_path));
  const issues=listingFieldIssues({title,description,price,category,condition,location,photoCount:files.length||photos.length,duplicate});
@@ -42,7 +51,7 @@ export function EditListingForm({listing,oldPhotos,existingTitles=[]}:{listing:L
   setBusy("photos");setError("");setSaved("");try{
    const response=await fetch(`/api/listings/${listing.id}/photos`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({paths:photos.map(p=>p.storage_path)})});
    const result:{message?:string;reviewRequired?:boolean}=await response.json();if(!response.ok)throw new Error(result.message||"Unable to save photo order");
-   setSaved(result.reviewRequired?"Photos updated. Ad sent for admin review.":"Cover and photo order saved.");router.refresh();
+   savedSnapshot.current=currentSnapshot;setSaved(result.reviewRequired?"Photos updated. Ad sent for admin review.":"Cover and photo order saved.");router.refresh();
   }catch(e){setError(e instanceof Error?e.message:"Photo save failed");}finally{setBusy("");}}
  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setAttempted(true);
   const invalid=firstInvalidListingField(issues);
