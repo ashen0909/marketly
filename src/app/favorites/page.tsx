@@ -22,7 +22,7 @@ export default async function FavoritesPage({ searchParams }: { searchParams: Pr
     <p className="mt-2 text-sm text-stone-500">Keep track of products you want to revisit.</p>
     {error && <p className="error-text mt-5">Could not load saved items. Apply database migration 003 first.</p>}
     <p className="mt-3 text-sm text-stone-500">{total} saved items</p>
-    {!error && listings.length ? <div className="mt-7 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">{listings.map(item => <ListingCard key={item.id} listing={item}/>)}</div> : !error && <div className="mt-8 rounded-2xl border border-dashed p-10 text-center"><p>No saved products yet.</p><Link href="/listings" className="mt-3 inline-block font-semibold text-[#946926] underline">Explore listings</Link></div>}
+    {!error && listings.length ? <div className="mt-7 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">{listings.map(item => <ListingCard key={item.id} listing={item} returnTo={`/favorites?page=${page}`}/>)}</div> : !error && <div className="mt-8 rounded-2xl border border-dashed p-10 text-center"><p>No saved products yet.</p><Link href="/listings" className="mt-3 inline-block font-semibold text-[#946926] underline">Explore listings</Link></div>}
     <PaginationControls path="/favorites" page={page} pages={totalPages(total)} />
   </div>;
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { userFacingError } from "@/lib/user-facing-error";
 import sharp from "sharp";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createAdminStorageBucket } from "@/lib/supabase/storage-admin";
@@ -53,7 +54,8 @@ export async function POST(request: Request) {
     const { data: signed } = await store.createSignedUrl(path, 3600);
     return NextResponse.json({ url: signed?.signedUrl || null, message: "Profile photo saved" }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    return fail(error instanceof Error ? error.message : "Photo upload failed", 400);
+    console.error("[Marketly] profile photo upload failed", error instanceof Error ? error.message : "Unknown error");
+    return fail(userFacingError(error, "upload"), 400);
   }
 }
 
@@ -63,7 +65,7 @@ export async function DELETE(request: Request) {
   if (!user) return fail("Sign in required", 401);
   const { data: existing } = await db.from("marketly_profile_details").select("photo_path").eq("user_id", user.id).maybeSingle();
   const { error } = await db.rpc("marketly_set_profile_photo", { p_photo_path: null });
-  if (error) return fail(error.message);
+  if (error) return fail(userFacingError(error, "upload"));
   if (existing?.photo_path) await createAdminStorageBucket("marketly-profile-photos").remove([existing.photo_path]);
   return NextResponse.json({ url: null, message: "Photo removed" }, { headers: { "Cache-Control": "no-store" } });
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { userFacingError } from "@/lib/user-facing-error";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { createServerSupabase, hasSupabaseConfig } from "@/lib/supabase/server";
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
     const admin = serverOnlyClient();
     if (parsed.data.action === "consume_credit") {
       const { data, error } = await admin.rpc("marketly_sandbox_consume_credit", { p_user_id: user.id });
-      if (error) return reply(error.message, 400);
+      if (error) return reply(userFacingError(error, "billing"), 400);
       return NextResponse.json({ used: Boolean(data), sandbox: true }, { headers: { "Cache-Control": "no-store" } });
     }
     const order = parsed.data;
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
       p_photo_count: order.kind === "photos" ? (order.photoCount ?? null) : null,
       p_request_key: order.requestKey,
     });
-    if (startError || !id) return reply(startError?.message ?? "Unable to create sandbox order", 400);
+    if (startError || !id) return reply((startError ? userFacingError(startError, "billing") : undefined) ?? "Unable to create sandbox order", 400);
 
     // Check the order belongs to the authenticated user before server-privileged simulation.
     const { data: ownedOrder, error: ownershipError } = await db.from("marketly_sandbox_payments")
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
     const { data: status, error: verifyError } = await admin.rpc("marketly_sandbox_record_result", {
       p_payment_id: id, p_success: order.outcome === "success",
     });
-    if (verifyError) return reply(verifyError.message, 400);
+    if (verifyError) return reply(userFacingError(verifyError, "billing"), 400);
     return NextResponse.json({ id, status, amountLkr: Number(ownedOrder.amount_lkr), sandbox: true }, {
       headers: { "Cache-Control": "no-store" },
     });

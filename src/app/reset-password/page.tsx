@@ -1,5 +1,6 @@
 "use client";
 import { useState, type FormEvent } from "react";
+import { userFacingError } from "@/lib/user-facing-error";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
@@ -16,7 +17,7 @@ export default function ResetPassword() {
    if(!user)throw new Error("Open the password recovery link from your email first.");
    const {error:authErr}=await client.auth.updateUser({password});if(authErr)throw authErr;
    setDone(true);setPassword("");setRepeat("");router.refresh();
-  }catch(err){setError(err instanceof Error?err.message:"Could not reset password");}
+  }catch(err){setError(userFacingError(err, "login"));}
   finally{setBusy(false);}
  }
  return <main className="mx-auto max-w-md px-4 py-16"><div className="rounded-2xl border bg-white p-6 shadow-sm"><h1 className="text-2xl font-extrabold">Set a new password</h1>

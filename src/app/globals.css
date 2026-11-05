@@ -37,3 +37,23 @@ button:disabled { cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 .field-control[aria-invalid="true"],input[aria-invalid="true"] { border-color: #b91c1c; }
 :focus-visible { outline: 3px solid #b88746; outline-offset: 3px; }
+
+/* Phase 07.2 — light, clear, responsive and fast. Animations use compositor-friendly opacity/transform. */
+:root { --market-green: #23764c; --market-green-light: #e7f5eb; }
+html { scroll-padding-top: 6rem; }
+.marketly-surface-card { border: 1px solid #eae5db; border-radius: 1.5rem; background: #fff; box-shadow: 0 5px 18px rgba(35,39,46,.035); }
+.marketly-primary-cta { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: .65rem; border-radius: .8rem; background: #24272E; color: white; padding: .75rem 1.2rem; font-weight: 750; font-size: .88rem; transition: background-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+.marketly-primary-cta:hover { background: #343A44; box-shadow: 0 7px 20px rgba(36,39,46,.16); transform: translateY(-1px); }
+.marketly-primary-cta:focus-visible { outline: 3px solid #b88746; outline-offset: 3px; }
+.marketly-empty-state { border: 1px dashed #d8d4c8; border-radius: 1rem; background: #fcfbf8; padding: 1.3rem; font-size: .87rem; color: #626871; }
+.marketly-back-link { transition: background-color .16s ease, border-color .16s ease, transform .16s ease; }
+.marketly-back-link:hover { transform: translateX(-2px); }
+.marketly-pricing-page article, .marketly-billing-page section, .marketly-billing-page header { animation: marketly-rise .28s cubic-bezier(.2,.7,.3,1) both; }
+.marketly-card-motion { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+.marketly-card-motion:hover { transform: translateY(-3px); border-color: #dac6a5; box-shadow: 0 12px 28px rgba(39,44,40,.09); }
+.marketly-nav-active { color: #a4742f; }
+@keyframes marketly-rise { from { opacity: .6; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) {
+ .marketly-pricing-page article, .marketly-billing-page section, .marketly-billing-page header { animation: none !important; }
+ .marketly-card-motion:hover, .marketly-back-link:hover, .marketly-primary-cta:hover { transform: none !important; }
+}

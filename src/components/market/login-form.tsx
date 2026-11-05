@@ -1,5 +1,6 @@
 "use client";
 import { useState, type FormEvent } from "react";
+import { userFacingError } from "@/lib/user-facing-error";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mail, Lock, UserRound, ShieldCheck } from "lucide-react";
@@ -27,7 +28,7 @@ export function LoginForm({ postLoginPath = "/dashboard" }: { postLoginPath?: st
       });
       if(resetError)throw resetError;
       setNotice("If this email belongs to an account, a password reset link has been requested. Check your inbox.");
-    }catch(e){setError(e instanceof Error?e.message:"Unable to request a password reset");}
+    }catch(e){setError(userFacingError(e, "login"));}
     finally{setLoading(false);}
   }
 
@@ -55,7 +56,7 @@ export function LoginForm({ postLoginPath = "/dashboard" }: { postLoginPath?: st
         if (authError) throw authError;
       }
       router.replace(mode === "register" ? "/profile?welcome=1" : postLoginPath); router.refresh();
-    } catch (err) { setError(err instanceof Error ? err.message : "Could not sign in."); }
+    } catch (err) { setError(userFacingError(err, "login")); }
     finally { setLoading(false); }
   }
 
