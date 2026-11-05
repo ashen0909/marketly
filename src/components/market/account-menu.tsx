@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { userFacingError } from "@/lib/user-facing-error";
 import { ChevronDown, Heart, LayoutDashboard, LogOut, MessageCircle, UserRound, CreditCard } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -41,7 +42,7 @@ export function AccountMenu({ displayName, email }: AccountMenuProps) {
       const { error: authError } = await createBrowserSupabase().auth.signOut();
       if (authError) throw authError;
       setOpen(false);router.replace("/");router.refresh();
-    } catch (err) { setError(err instanceof Error ? err.message : "Could not sign out."); }
+    } catch (err) { setError(userFacingError(err, "general")); }
     finally { setBusy(false); }
   }
   const itemClass = "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm hover:bg-[#F8F5EE] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#B88746]";

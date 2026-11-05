@@ -13,9 +13,12 @@ export async function SiteHeader() {
     const supabase = await createServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
+      // Both requests are independent; parallel work shortens every authenticated page render.
+      const [{ data: profile }, { data: adminFlag }] = await Promise.all([
+        supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
+        supabase.rpc("marketly_is_admin"),
+      ]);
       const fallbackName = typeof user.user_metadata?.display_name === "string" ? user.user_metadata.display_name : "";
-      const {data:adminFlag}=await supabase.rpc("marketly_is_admin");
       isAdmin=!!adminFlag;
       account = {
         displayName: profile?.display_name || fallbackName || user.email?.split("@")[0] || "Marketly member",
@@ -25,7 +28,7 @@ export async function SiteHeader() {
     }
   }
 
-  return <header className="bg-[#24272E] text-white">
+  return <header className="sticky top-0 z-50 border-b border-[#D0A352]/20 bg-[#24272E]/95 text-white shadow-[0_4px_15px_rgba(0,0,0,.09)] backdrop-blur-lg">
     <div className="mx-auto flex h-[74px] max-w-7xl min-w-0 items-center gap-2 px-3 sm:gap-6 sm:px-6">
       <Link href="/" className="flex shrink-0 items-center gap-2 text-xl font-extrabold tracking-tight sm:gap-3" aria-label="Marketly home">
         <span className="flex size-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#D0A352] to-[#A7752A]"><ShoppingBag className="size-6 text-[#24272E]" /></span><span className="hidden min-[365px]:inline">Marketly</span>

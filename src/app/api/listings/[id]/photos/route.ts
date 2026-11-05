@@ -1,4 +1,5 @@
 import {NextResponse} from "next/server";
+import { userFacingError } from "@/lib/user-facing-error";
 import {z} from "zod";
 import {createServerSupabase} from "@/lib/supabase/server";
 import {createAdminStorage} from "@/lib/supabase/storage-admin";
@@ -15,7 +16,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   const {data:removed,error}=await db.rpc("marketly_manage_listing_photos",{
     p_listing_id:id,p_ordered_paths:parsed.data.paths,
   });
-  if(error)return NextResponse.json({message:error.message},{status:400});
+  if(error)return NextResponse.json({message:userFacingError(error, "upload")},{status:400});
   if(Array.isArray(removed)&&removed.length){
     try {const {error:cleanup}=await createAdminStorage().remove(removed);
       if(cleanup)console.warn("[Marketly] listing photo cleanup deferred",cleanup.message);

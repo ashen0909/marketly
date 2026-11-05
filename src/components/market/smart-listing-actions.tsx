@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Share2, Clock3 } from "lucide-react";
 import type { Listing } from "@/data/catalog";
 import { formatLkr } from "@/lib/config";
+import { listingDetailHref } from "@/lib/listing-return";
 
 export type SavedListing = {
   id: string; title: string; price_lkr: number; condition: string;
@@ -48,7 +49,7 @@ export function RecentlyViewedSection() {
   if (!items.length) return null;
   return <section className="mx-auto max-w-7xl px-4 pb-10 sm:px-6">
     <h2 className="mb-4 flex items-center gap-2 text-xl font-extrabold"><Clock3 className="size-5 text-[#B88746]"/>Recently viewed</h2>
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{items.slice(0, 4).map(item=><Link key={item.id} href={`/listings/${item.id}`} className="rounded-xl border bg-white p-4 hover:border-[#CFA764]"><p className="truncate text-sm font-semibold">{item.title}</p><p className="mt-1 text-xs text-[#A3722F]">{formatLkr(item.price_lkr)}</p></Link>)}</div>
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{items.slice(0, 4).map(item=><Link key={item.id} href={listingDetailHref(item.id, "/")} className="rounded-xl border bg-white p-4 hover:border-[#CFA764]"><p className="truncate text-sm font-semibold">{item.title}</p><p className="mt-1 text-xs text-[#A3722F]">{formatLkr(item.price_lkr)}</p></Link>)}</div>
     <p className="mt-2 text-xs text-stone-500">Saved only on this device. Prices or availability may have changed.</p>
   </section>;
 }

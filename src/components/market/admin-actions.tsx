@@ -1,5 +1,6 @@
 "use client";
 import {useState} from "react";
+import { userFacingError } from "@/lib/user-facing-error";
 import {useRouter} from "next/navigation";
 import {createBrowserSupabase} from "@/lib/supabase/browser";
 import {useMarketlyUi} from "@/components/market/marketly-ui-provider";
@@ -16,7 +17,7 @@ export function AdminActions({kind,id}:Props){
       kind==="report"?{p_report_id:id,p_action:action,p_note:note}:{p_request_id:id,p_decision:action,p_note:note};
       const fn=kind==="listing"?"marketly_review_listing":kind==="report"?"marketly_review_report":"marketly_review_verification";
       const {error}=await db.rpc(fn,opts);if(error)throw new Error(error.message);toast(`Review ${action} saved`,"success");setDone(true);router.refresh();
-    }catch(e){setError(e instanceof Error?e.message:"Review failed");}finally{setBusy(false);}}
+    }catch(e){setError(userFacingError(e, "general"));}finally{setBusy(false);}}
   const actions=kind==="report"?[['hide','Hide listing'],['dismiss','Dismiss report'],['resolve','Resolve']]:[['approved','Approve'],['rejected','Reject']];
   return <div className="mt-3 space-y-2"><input aria-label="Admin review reason" value={note} maxLength={500} onChange={e=>setNote(e.target.value)} placeholder="Review note (optional)" className="field-control"/>
     <div className="flex flex-wrap gap-2">{actions.map(([action,label])=><button type="button" key={action} disabled={busy||done} onClick={()=>decide(action)} className="rounded-lg border border-[#B88746] px-3 py-1.5 text-xs font-semibold hover:bg-amber-50">{label}</button>)}</div>

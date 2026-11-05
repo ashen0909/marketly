@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { userFacingError } from "@/lib/user-facing-error";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createAdminStorage } from "@/lib/supabase/storage-admin";
 export const runtime="nodejs";
@@ -13,7 +14,7 @@ export async function DELETE(request: Request,{params}:{params:Promise<{id:strin
     .eq("id",id).eq("seller_id",user.id).maybeSingle();
   if(!old)return NextResponse.json({message:"Draft not found"},{status:404});
   const {error}=await db.rpc("marketly_delete_listing_draft",{p_draft_id:id});
-  if(error)return NextResponse.json({message:error.message},{status:400});
+  if(error)return NextResponse.json({message:userFacingError(error, "save")},{status:400});
   const paths=[...(old.image_paths||[]),...(old.preview_paths||[])];
   if(paths.length)try {
     const {error:cleanupError}=await createAdminStorage().remove(paths);

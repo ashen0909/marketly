@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
+import { userFacingError } from "@/lib/user-facing-error";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -124,8 +125,7 @@ export function ProfileForm({ initialName, initialDetails, initialPhotoUrl, emai
       toast("Profile details saved", "success");
       router.refresh();
     } catch (err) {
-      const details = err instanceof Error ? err.message : "Could not save profile";
-      setError(`Could not save your details: ${details}`);
+      setError(userFacingError(err, "save"));
       toast("Profile save failed. Check the message under My details.", "error");
     } finally { setBusy(""); }
   }
@@ -150,7 +150,7 @@ export function ProfileForm({ initialName, initialDetails, initialPhotoUrl, emai
         setSavedDetails(previous => ({ ...previous, photo_path: path }));
       }
       toast("Profile photo updated", "success"); router.refresh();
-    } catch (err) { setError(err instanceof Error ? err.message : "Upload failed"); }
+    } catch (err) { setError(userFacingError(err, "save")); }
     finally { setBusy(""); if (photoRef.current) photoRef.current.value=""; }
   }
 
@@ -165,7 +165,7 @@ export function ProfileForm({ initialName, initialDetails, initialPhotoUrl, emai
       setSavedDetails(old => ({ ...old, photo_path: null }));
       setPhotoUrl(null);
       toast("Profile photo removed", "success"); router.refresh();
-    } catch (err) { setError(err instanceof Error ? err.message : "Photo removal failed"); }
+    } catch (err) { setError(userFacingError(err, "save")); }
     finally { setBusy(""); }
   }
 
@@ -176,7 +176,7 @@ export function ProfileForm({ initialName, initialDetails, initialPhotoUrl, emai
       if (authError) throw authError;
       setMessage("Check your email to confirm the address change before it takes effect.");
       toast("Email confirmation requested", "success");
-    } catch (err) { setError(err instanceof Error ? err.message : "Could not request email change"); }
+    } catch (err) { setError(userFacingError(err, "save")); }
     finally { setBusy(""); }
   }
   async function changePassword(event: FormEvent<HTMLFormElement>) {
@@ -187,7 +187,7 @@ export function ProfileForm({ initialName, initialDetails, initialPhotoUrl, emai
       const { error: authError } = await createBrowserSupabase().auth.updateUser({ password: newPassword });
       if (authError) throw authError;
       setNewPassword(""); setPasswordConfirm(""); setMessage("Password updated successfully."); toast("Password updated", "success");
-    } catch (err) { setError(err instanceof Error ? err.message : "Could not update password"); }
+    } catch (err) { setError(userFacingError(err, "save")); }
     finally { setBusy(""); }
   }
 

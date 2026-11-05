@@ -2,13 +2,13 @@ import { sriLankaBillingMonth } from "@/lib/billing-month";
 import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { Plus, Settings, Store, ShieldCheck, Zap } from "lucide-react";
+import { Plus, Settings, Store, Zap } from "lucide-react";
 import { createServerSupabase, hasSupabaseConfig } from "@/lib/supabase/server";
 import { getMyListingsPage } from "@/lib/catalog";
 import { PaginationControls } from "@/components/market/pagination-controls";
 import { readPage, totalPages, pageRange } from "@/lib/pagination";
 import { ListingCard } from "@/components/market/listing-card";
-import { SignOutButton, SellerListingActions } from "@/components/market/dashboard-actions";
+import { SellerListingActions } from "@/components/market/dashboard-actions";
 import { DraftActions } from "@/components/market/draft-actions";
 import { buttonVariants } from "@/components/ui/button";
 import { marketlyConfig } from "@/lib/config";
@@ -42,9 +42,10 @@ export default async function DashboardPage({searchParams}:{searchParams:Promise
  const remaining=Math.max(0,marketlyConfig.freeAdsPerCalendarMonth-(used??0));
  const count=status==="drafts"?draftTotal:ads.total;
  const linkFor=(target:string)=>`/dashboard?${new URLSearchParams({status:target,...(search?{q:search}:{})}).toString()}`;
+ const dashboardReturn=`/dashboard?${new URLSearchParams({status,...(search?{q:search}:{}),page:String(page)}).toString()}`;
  return <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
   <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="font-semibold text-[#A3722F]">Seller workspace</p><h1 className="mt-2 text-3xl font-extrabold">Manage your advertisements</h1><p className="mt-2 text-stone-500">Filter listings, fix rejected ads and resume unfinished drafts.</p></div>
-   <div className="flex flex-wrap gap-2"><Link href="/profile" className="rounded-xl border px-3 py-2 text-sm"><Settings className="mr-1 inline size-4"/> Profile</Link><Link href="/verification" className="rounded-xl border px-3 py-2 text-sm"><ShieldCheck className="mr-1 inline size-4"/> Verification</Link><Link href="/billing" className="rounded-xl border border-[#B88746] bg-[#FFFBF3] px-3 py-2 text-sm font-semibold"><Zap className="mr-1 inline size-4"/> Sandbox billing</Link><SignOutButton/><Link href="/sell/new" className={buttonVariants()}><Plus className="size-4"/> New ad</Link></div></div>
+   <div className="flex flex-wrap gap-2"><Link href="/profile" className="rounded-xl border px-3 py-2 text-sm"><Settings className="mr-1 inline size-4"/> Profile</Link><Link href="/billing" className="inline-flex min-h-11 items-center rounded-xl border border-[#B9DDC8] bg-[#EAF8EF] px-3 py-2 text-sm font-semibold text-[#206442] hover:bg-[#DEF3E5]"><Zap className="mr-1 inline size-4"/> Sandbox billing</Link><Link href="/sell/new" className={buttonVariants()}><Plus className="size-4"/> New ad</Link></div></div>
   <div className="mt-8 grid gap-3 sm:grid-cols-3">
     <div className="rounded-2xl border bg-white p-5"><p className="text-sm text-stone-500">Free ads remaining</p><p className="mt-1 text-3xl font-bold">{remaining}</p></div>
     <div className="rounded-2xl border bg-white p-5"><p className="text-sm text-stone-500">Saved drafts</p><p className="mt-1 text-3xl font-bold">{draftCount??0}</p></div>
@@ -60,7 +61,7 @@ export default async function DashboardPage({searchParams}:{searchParams:Promise
       <DraftActions id={draft.id}/></div></article>)}</div>
    :<p className="mt-5 rounded-2xl border border-dashed p-10">No drafts found. <Link href="/sell/new" className="font-semibold underline">Start an ad</Link> and click Save as draft.</p>
   ):(
-   ads.listings.length?<div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{ads.listings.map(l=><div key={l.id} className="rounded-2xl border bg-white p-2"><ListingCard listing={l} showFavorite={false}/>
+   ads.listings.length?<div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{ads.listings.map(l=><div key={l.id} className="rounded-2xl border bg-white p-2"><ListingCard listing={l} showFavorite={false} returnTo={dashboardReturn}/>
     <div className="space-y-3 p-3"><div className="flex flex-wrap gap-2 text-xs font-bold"><span className="rounded-full bg-stone-100 px-3 py-1">{l.status==="active"?"Available":l.status==="sold"?"Sold":l.status==="deleted"?"Deleted":"Paused"}</span><span className={`rounded-full px-3 py-1 ${l.moderation_status==="approved"?"bg-emerald-100 text-emerald-800":l.moderation_status==="rejected"?"bg-red-100 text-red-800":"bg-amber-100 text-amber-900"}`}>{l.moderation_status||"Pending"}</span></div>
     {l.moderation_status==="rejected"&&<div className="rounded-xl border border-red-200 bg-red-50 p-3"><p className="text-sm font-bold text-red-800">Changes requested by admin</p><p className="mt-1 text-xs text-red-800">{l.moderation_note||"Check your listing details and submit corrections."}</p><p className="mt-2 text-xs text-red-800">Correcting this same ad does not use another posting credit.</p></div>}
     {l.moderation_status!=="rejected"&&l.moderation_note&&<p className="text-xs text-red-700">Admin note: {l.moderation_note}</p>}

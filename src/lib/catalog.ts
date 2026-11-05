@@ -164,8 +164,7 @@ export async function getFavoriteListings(userId: string, page = 1): Promise<{ l
   const ids = (rows ?? []).map((row) => row.listing_id);
   if (!ids.length) return { listings: [], total: count ?? 0 };
   const { data, error: listingError } = await supabase.from("listings").select(LISTING_COLUMNS)
-    .in("id", ids).eq("status", "active").eq("moderation_status", "approved")
-    .gt("expires_at", new Date().toISOString());
+    .in("id", ids).eq("status", "active").eq("moderation_status", "approved"); // No 60-day expiry (disabled in Phase 06).
   if (listingError) { reportDbError("load favorite listings", listingError); return { listings: [], total: 0, error: "Cannot load favorite listings" }; }
   const sorted = new Map(ids.map((id, i) => [id, i]));
   return { total: count ?? 0, listings: (await attachPublicDetails(supabase, (data ?? []) as Array<Record<string, unknown>>))

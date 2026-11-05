@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { userFacingError } from "@/lib/user-facing-error";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, BadgeCheck, CreditCard, ImagePlus, Zap } from "lucide-react";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
@@ -38,7 +39,7 @@ export function TestCheckout({ availableListings, defaultListingId }: Props) {
       if (dbError) throw new Error(dbError.message);
       setResult(`Test order ${String(data).slice(0, 8)} created for ${formatLkr(amount)}. No money charged and NO paid benefit activated.`);
       router.refresh();
-    } catch (e) {setError(e instanceof Error ? e.message : "Could not simulate checkout.");}
+    } catch (e) {setError(userFacingError(e, "billing"));}
     finally { setBusy(false); }
   }
   return <section className="rounded-3xl border border-[#E6DCCD] bg-white p-5 shadow-sm sm:p-7">

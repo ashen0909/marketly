@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { userFacingError } from "@/lib/user-facing-error";
 import { createServerSupabase } from "@/lib/supabase/server";
 export const runtime="nodejs";
 export async function POST(request: Request,{params}:{params:Promise<{id:string}>}) {
@@ -10,8 +11,8 @@ export async function POST(request: Request,{params}:{params:Promise<{id:string}
   if(!user)return NextResponse.json({message:"Sign in"},{status:401});
   const {data:listingId,error}=await db.rpc("marketly_submit_listing_draft",{p_draft_id:id});
   if(error){
-    const message=error.message;
-    return NextResponse.json({message},{status:/QUOTA|DUPLICATE/.test(message)?409:400});
+    const message=userFacingError(error, "save");
+    return NextResponse.json({message},{status:/QUOTA|DUPLICATE/.test(error.message)?409:400});
   }
   return NextResponse.json({id:listingId,message:"Submitted for admin review"},{status:201});
 }

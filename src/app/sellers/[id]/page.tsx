@@ -32,7 +32,7 @@ export default async function SellerPage({ params, searchParams }: { params: Pro
       {user?.id !== id && <FollowSellerButton sellerId={id} signedIn={!!user} initialFollowing={!!following} />}
     </div>
     <h2 className="mt-9 text-xl font-bold">Active advertisements ({total})</h2>
-    {listings.length ? <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">{listings.map(item => <ListingCard key={item.id} listing={item}/>)}</div> : <p className="mt-5 rounded-2xl border border-dashed p-8 text-stone-500">No active listings at the moment.</p>}
+    {listings.length ? <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">{listings.map(item => <ListingCard key={item.id} listing={item} returnTo={`/sellers/${id}?page=${page}`}/>)}</div> : <p className="mt-5 rounded-2xl border border-dashed p-8 text-stone-500">No active listings at the moment.</p>}
     <PaginationControls path={`/sellers/${id}`} page={page} pages={totalPages(total)} />
   </div>;
 }
