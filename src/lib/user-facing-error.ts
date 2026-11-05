@@ -37,6 +37,16 @@ const publicCodeMessages: Record<string,string> = {
   CANNOT_CONTACT_YOURSELF: "You can't start a conversation with your own ad.",
   INVALID_MESSAGE: "Enter a message before sending.",
   ADMIN_REQUIRED: "Only a Marketly administrator can perform this action.",
+  OWNER_ONLY: "Only the Marketly Owner can manage Sub Admins and owner benefits.",
+  ADMIN_PERMISSION_REQUIRED: "Your administrator role does not allow this action.",
+  SELF_REVIEW_NOT_ALLOWED: "You cannot review your own listing or request. Another authorized administrator must handle it.",
+  REGISTERED_USER_REQUIRED: "The person needs a registered Marketly account before becoming a Sub Admin.",
+  SUB_ADMIN_NOT_FOUND: "This Sub Admin is no longer available. Refresh the team list.",
+  SELECT_VALID_PERMISSIONS: "Choose at least one valid permission.",
+  OWNER_PROTECTED: "The Owner account cannot be edited by Sub Admin tools.",
+  VALID_EMAIL_REQUIRED: "Enter a valid registered email address.",
+  OWN_APPROVED_ACTIVE_LISTING_REQUIRED: "Choose one of your own approved, active ads to apply a free boost.",
+
 };
 
 const approvedPrefixes = [

@@ -9,6 +9,7 @@ import { NotificationBell } from "@/components/market/notification-bell";
 export async function SiteHeader() {
   let account: { displayName: string; email: string; id: string } | null = null;
   let isAdmin = false;
+  let adminRole: "owner" | "sub_admin" | "user" = "user";
   if (hasSupabaseConfig()) {
     const supabase = await createServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();
@@ -16,10 +17,11 @@ export async function SiteHeader() {
       // Both requests are independent; parallel work shortens every authenticated page render.
       const [{ data: profile }, { data: adminFlag }] = await Promise.all([
         supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
-        supabase.rpc("marketly_is_admin"),
+        supabase.rpc("marketly_admin_access"),
       ]);
       const fallbackName = typeof user.user_metadata?.display_name === "string" ? user.user_metadata.display_name : "";
-      isAdmin=!!adminFlag;
+      isAdmin=adminFlag?.isAdmin === true;
+      adminRole=adminFlag?.role === "owner" ? "owner" : adminFlag?.role === "sub_admin" ? "sub_admin" : "user";
       account = {
         displayName: profile?.display_name || fallbackName || user.email?.split("@")[0] || "Marketly member",
         id: user.id,
@@ -37,14 +39,14 @@ export async function SiteHeader() {
         <Link href="/" className="hover:text-[#E4BD76]">Home</Link>
         <Link href="/listings" className="hover:text-[#E4BD76]">Categories</Link>
         <Link href="/membership" className="hover:text-[#E4BD76]">Memberships</Link>
-        {isAdmin && <Link href="/admin" className="font-bold text-[#E4BD76]">Admin</Link>}
+        {isAdmin && <Link href="/admin" className="font-bold text-[#E4BD76]">{adminRole==="owner"?"Owner Dashboard":"Admin Dashboard"}</Link>}
       </nav>
       <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-4">
         <Link href="/listings" className="hidden items-center gap-1 text-xs text-white/85 lg:flex"><MapPin className="size-4"/> All Sri Lanka</Link>
         <Link href={account ? "/favorites" : "/login"} aria-label="Saved items" className="hidden sm:block"><Heart className="size-5" /></Link>
         <Link href={account ? "/messages" : "/login"} aria-label="Messages" className="hidden sm:block"><MessageCircle className="size-5" /></Link>
         {account && <NotificationBell userId={account.id} />}
-        {account ? <AccountMenu displayName={account.displayName} email={account.email} /> : <Link href="/login" className="flex items-center gap-1 text-sm"><UserRound className="size-5"/><span className="hidden sm:inline">Sign In</span></Link>}
+        {account ? <AccountMenu displayName={account.displayName} email={account.email} adminRole={isAdmin ? adminRole : "user"} /> : <Link href="/login" className="flex items-center gap-1 text-sm"><UserRound className="size-5"/><span className="hidden sm:inline">Sign In</span></Link>}
         <Link href="/sell/new" className={buttonVariants({ size: "sm" })}><Plus className="size-4"/> <span className="hidden min-[375px]:inline">Sell Item</span><span className="min-[375px]:hidden">Sell</span></Link>
       </div>
     </div>

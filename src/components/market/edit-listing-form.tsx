@@ -13,7 +13,8 @@ import {ListingFieldFeedback} from "@/components/market/listing-field-feedback";
 import {publicListingImageUrl} from "@/lib/listing-drafts";
 
 type OldPhoto={storage_path:string;preview_storage_path:string|null};
-export function EditListingForm({listing,oldPhotos,existingTitles=[]}:{listing:Listing;oldPhotos:OldPhoto[];existingTitles?:string[]}){
+export function EditListingForm({listing,oldPhotos,existingTitles=[],ownerBenefits=false}:{listing:Listing;oldPhotos:OldPhoto[];existingTitles?:string[];ownerBenefits?:boolean}){
+ const photoLimit=ownerBenefits?12:5;
  const router=useRouter();const [files,setFiles]=useState<File[]>([]);
  const savedSnapshot=useRef("");
  const formRef=useRef<HTMLFormElement>(null);
@@ -37,13 +38,13 @@ export function EditListingForm({listing,oldPhotos,existingTitles=[]}:{listing:L
  },[currentSnapshot]);
  const duplicate=existingTitles.some(t=>sameTitle(t,title));
  const photoChanged=JSON.stringify(photos.map(p=>p.storage_path))!==JSON.stringify(oldPhotos.map(p=>p.storage_path));
- const issues=listingFieldIssues({title,description,price,category,condition,location,photoCount:files.length||photos.length,duplicate});
+ const issues=listingFieldIssues({title,description,price,category,condition,location,photoCount:files.length||photos.length,maxPhotoCount:photoLimit,duplicate});
  const markTouched=(field:ListingFieldName)=>setTouched(old=>({...old,[field]:true}));
  const visibleIssue=(field:ListingFieldName)=>attempted||touched[field]||issues[field]?.severity==="warning"?issues[field]:undefined;
  const currentPhotoIssue=photoError?{message:photoError,severity:"error" as const}:visibleIssue("photos");
  function selectFiles(e:ChangeEvent<HTMLInputElement>){setError("");setPhotoError("");markTouched("photos");const selected=Array.from(e.target.files||[]);e.target.value="";
-  if(selected.length>5||selected.some(f=>!["image/jpeg","image/png","image/webp"].includes(f.type)||f.size>5*1024*1024||f.size<1)){
-   setPhotoError("Choose 1–5 JPG/PNG/WEBP replacement photos, each no larger than 5 MB.");return;
+  if(selected.length>photoLimit||selected.some(f=>!["image/jpeg","image/png","image/webp"].includes(f.type)||f.size>5*1024*1024||f.size<1)){
+   setPhotoError(`Choose 1–${photoLimit} JPG/PNG/WEBP replacement photos, each no larger than 5 MB.`);return;
   }setFiles(selected);
  }
  function move(index:number,step:number){const other=index+step;if(other<0||other>=photos.length)return;
@@ -94,7 +95,7 @@ export function EditListingForm({listing,oldPhotos,existingTitles=[]}:{listing:L
     {photoChanged&&<p className="text-xs text-amber-800">Unsaved photo changes. Removing an existing photo sends the ad for admin re-review; reordering alone does not.</p>}
     <div><label className="field-label mt-4 block" htmlFor="replacement-photos">Or replace ALL photos (optional)</label><input id="replacement-photos" type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={selectFiles} className="w-full text-sm"
      aria-invalid={currentPhotoIssue?.severity==="error"} aria-describedby={currentPhotoIssue?"edit-photos-feedback":undefined}/>
-     <ListingFieldFeedback id="edit-photos-feedback" issue={currentPhotoIssue}/><p className="mt-2 text-xs text-stone-500">Leave empty to keep photos. Upload 1–5 replacement photos when you save listing details. Additional paid photos are not enabled yet.</p>{files.length>0&&<p className="mt-2 text-xs font-semibold">{files.length} replacement photo(s) selected.</p>}</div>
+     <ListingFieldFeedback id="edit-photos-feedback" issue={currentPhotoIssue}/><p className="mt-2 text-xs text-stone-500">Leave empty to keep photos. {ownerBenefits?"Upload 1–12 replacement photos free as Owner.":"Upload 1–5 replacement photos when you save listing details. Additional paid photos are not enabled yet."}</p>{files.length>0&&<p className="mt-2 text-xs font-semibold">{files.length} replacement photo(s) selected.</p>}</div>
    </section>
    <p className="text-xs text-stone-500">Any listing-quality warnings appear beside the relevant field.</p>
    <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Saving details sends this advertisement to Pending Review. Sold items remain Sold until you manually Relist and get admin approval.</p>

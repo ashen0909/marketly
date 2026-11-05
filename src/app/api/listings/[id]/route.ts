@@ -10,11 +10,12 @@ const schema=z.object({title:z.string().trim().min(5).max(90),description:z.stri
 const fail=(message:string,status=400)=>NextResponse.json({message},{status});
 export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){
   if(request.headers.get("origin")&&request.headers.get("origin")!==new URL(request.url).origin)return fail("Cross-origin blocked",403);
-  if(Number(request.headers.get("content-length")||0)>27*1024*1024)return fail("Upload too large",413);
+  if(Number(request.headers.get("content-length")||0)>65*1024*1024)return fail("Upload too large",413);
   const {id}=await params;if(!/^[0-9a-f-]{36}$/i.test(id))return fail("Invalid ID");
   const db=await createServerSupabase();const {data:{user}}=await db.auth.getUser();if(!user)return fail("Sign in",401);
   const {data:own,error:ownershipError}=await db.from("listings").select("id").eq("id",id).eq("seller_id",user.id).maybeSingle();
   if(ownershipError||!own)return fail("Listing not found or not yours",403);
+  const {data:ownerFree}=await db.rpc("marketly_is_owner");
   const form=await request.formData().catch(()=>null);if(!form)return fail("Invalid form data");
   const result=schema.safeParse({title:form.get("title"),description:form.get("description"),price:form.get("price"),
     category:form.get("category"),location:form.get("location"),condition:form.get("condition"),is_negotiable:form.get("is_negotiable")==="true"});
@@ -24,7 +25,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if ((duplicates ?? []).some(row => row.title.trim().toLocaleLowerCase("en") === result.data.title.trim().toLocaleLowerCase("en")))
     return fail("You already have another active ad with this title.",409);
   const files=form.getAll("images");if(files.some(f=>!(f instanceof File)))return fail("Invalid photos");
-  if(files.length)try{validateImageFiles(files as File[]);}catch(e){return fail(e instanceof Error?e.message:"Invalid photos");}
+  if(files.length)try{validateImageFiles(files as File[],ownerFree?12:5);}catch(e){return fail(e instanceof Error?e.message:"Invalid photos");}
   const {data:oldPhotos}=files.length?await db.from("listing_images").select("storage_path,preview_storage_path").eq("listing_id",id):{data:null};
   let uploaded:Awaited<ReturnType<typeof uploadListingPhotoPairs>>|undefined;
   try{

@@ -12,6 +12,7 @@ export function ListingCard({ listing, showFavorite = true, returnTo }: { listin
     <div className="relative aspect-[1.5] overflow-hidden bg-[#F5F2EE]">
       {(listing.preview_urls?.[0] || listing.image_urls[0]) ? <Image src={listing.preview_urls?.[0] || listing.image_urls[0]} alt={listing.title} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw" className="object-cover transition-transform duration-300 group-hover:scale-[1.035]" loading="lazy" unoptimized/> : <div className="grid size-full place-items-center text-stone-400"><ImageOff aria-hidden="true" /></div>}
 
+      {!listing.sample && listing.owner_boost_until && new Date(listing.owner_boost_until).getTime()>Date.now() && <span className="absolute left-3 top-3 rounded-full border border-[#E7CE9C] bg-[#24272E] px-3 py-1 text-[11px] font-bold text-[#F2D29A]">Promoted</span>}
       {listing.sample && <span className="absolute left-3 top-3 rounded-full bg-[#24272E]/90 px-2.5 py-1 text-[11px] font-medium text-white">Sample listing</span>}
     </div>
     <div className="space-y-1.5 px-4 py-3.5">

@@ -27,11 +27,12 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   const { data: { user } } = await db.auth.getUser();
   if (!user) redirect("/login");
   const { listing } = await searchParams;
-  const [adsResult, ordersResult, sandboxOrders, entitlements] = await Promise.all([
+  const [adsResult, ordersResult, sandboxOrders, entitlements, ownerRole] = await Promise.all([
     db.from("listings").select("id,title").eq("seller_id", user.id).eq("status", "active").eq("moderation_status", "approved").order("published_at",{ascending:false}).limit(100),
     db.from("marketly_test_orders").select("id,kind,amount_lkr,plan_id,photo_count,created_at").eq("user_id", user.id).order("created_at",{ascending:false}).limit(10),
     db.from("marketly_sandbox_payments").select("id,kind,status,amount_lkr,created_at").eq("user_id",user.id).order("created_at",{ascending:false}).limit(30),
     db.from("marketly_sandbox_entitlements").select("id,kind,credits_total,credits_used,starts_at,ends_at,listing_id").eq("user_id",user.id).order("created_at",{ascending:false}).limit(50),
+    db.rpc("marketly_is_owner"),
   ]);
   const sandboxEnabled = process.env.NODE_ENV === "development" && process.env.MARKETLY_SANDBOX_ENABLED === "true";
   const sandboxCount = sandboxOrders.data?.length ?? 0;
@@ -44,6 +45,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
         <Link href="/membership" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-[#A4752A] hover:underline">Review all membership prices</Link>
       </div>
     </header>
+    {ownerRole.data===true&&<div className="mt-5 rounded-xl border border-[#DFC99B] bg-[#FFFAF0] p-4 text-sm text-[#795622]"><strong>Owner account:</strong> Free postings, up to 12 photos and free owner promotions are enabled. Real payments are not launched. Below is a separate sandbox simulator for QA; you never need to simulate a payment to use owner privileges.</div>}
     <div className="mt-5 grid gap-3 sm:grid-cols-3">
       <div className="marketly-surface-card flex items-center gap-3 p-4"><div className="rounded-xl bg-[#F7EAD1] p-2.5 text-[#A4752A]"><Wallet className="size-5"/></div><div><p className="text-xs text-stone-500">Sandbox credits left</p><p className="text-xl font-black text-[#A4752A]">{activeCredits}</p></div></div>
       <div className="marketly-surface-card flex items-center gap-3 p-4"><div className="rounded-xl bg-[#F8EFDA] p-2.5 text-[#9D7235]"><History className="size-5"/></div><div><p className="text-xs text-stone-500">Test payment events</p><p className="text-xl font-black">{sandboxCount}</p></div></div>

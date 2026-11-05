@@ -9,7 +9,7 @@ type ServerSupabase = Awaited<ReturnType<typeof createServerSupabase>>;
 
 // Keep the main listing request independent of PostgREST relationship embedding.
 // One broken profile/image relationship must not hide every public advertisement.
-const LISTING_COLUMNS = "id,title,description,price_lkr,category,location,condition,status,moderation_status,moderation_note,is_negotiable,seller_id,published_at,expires_at";
+const LISTING_COLUMNS = "id,title,description,price_lkr,category,location,condition,status,moderation_status,moderation_note,is_negotiable,seller_id,published_at,expires_at,owner_boost_until";
 
 function reportDbError(operation: string, error: DbError): void {
   // Server logs only: never print API keys, user cookies or private chat content.
@@ -42,6 +42,7 @@ export function toListing(row: Record<string, unknown>, baseUrl: string): Listin
     image_urls: images.map((im) => `${baseUrl}/storage/v1/object/public/listing-images/${encodeURI(im.storage_path)}`),
     published_at: String(row.published_at),
     expires_at: typeof row.expires_at === "string" ? row.expires_at : null,
+    owner_boost_until: typeof row.owner_boost_until === "string" ? row.owner_boost_until : null,
     is_negotiable: Boolean(row.is_negotiable), moderation_status: (row.moderation_status ?? "approved") as Listing["moderation_status"],
     moderation_note: typeof row.moderation_note === "string" ? row.moderation_note : null,
     preview_urls: images.map((im) => `${baseUrl}/storage/v1/object/public/listing-images/${encodeURI(im.preview_storage_path || im.storage_path)}`),
@@ -92,9 +93,9 @@ export async function getListings(filters: ListingFilters = {}, page = 1, pageSi
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   const { from, to } = pageRange(page, pageSize);
-  let query = supabase.from("listings").select(LISTING_COLUMNS, { count: "exact" })
+  let query = supabase.from("marketly_listing_feed").select(LISTING_COLUMNS + ",active_owner_boost_sort", { count: "exact" })
     .eq("status", "active").eq("moderation_status", "approved")
-    .order("published_at", { ascending: false }).range(from, to);
+    .order("active_owner_boost_sort",{ascending:false,nullsFirst:false}).order("published_at", { ascending: false }).range(from, to);
   if (user) query = query.neq("seller_id", user.id);
   if (filters.category && filters.category !== "All") query = query.eq("category", filters.category);
   if (filters.location && filters.location !== "All Sri Lanka") query = query.eq("location", filters.location);
@@ -104,7 +105,7 @@ export async function getListings(filters: ListingFilters = {}, page = 1, pageSi
     reportDbError("load active listings", error);
     return { listings: [], sample: false, total: 0, error: "Could not load listings. Check the Next.js terminal for the database error." };
   }
-  return { listings: await attachPublicDetails(supabase, (data ?? []) as Array<Record<string, unknown>>), sample: false, total: count ?? 0 };
+  return { listings: await attachPublicDetails(supabase, (data ?? []) as unknown as Array<Record<string, unknown>>), sample: false, total: count ?? 0 };
 }
 
 export async function getListing(id: string): Promise<Listing | null> {
