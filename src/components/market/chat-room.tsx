@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { userFacingError } from "@/lib/user-facing-error";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Send, Tag, ShieldAlert, LockKeyhole, CheckCheck, ChevronUp } from "lucide-react";
 import Link from "next/link";
@@ -87,7 +88,7 @@ export function ChatRoom({ conversationId, myId, isBuyer, partnerName, listingTi
     const { data, error: dbError } = await supabase.from("messages")
       .select("id,sender_id,body,created_at,is_system,read_at").eq("conversation_id", conversationId)
       .order("created_at", { ascending: false }).range(messages.length, messages.length + PAGE_SIZE - 1);
-    if (dbError) setError(dbError.message);
+    if (dbError) setError(userFacingError(dbError, "message"));
     else {
       const earlier = (data ?? []) as Message[];
       setHasEarlier(earlier.length >= PAGE_SIZE);
@@ -108,7 +109,7 @@ export function ChatRoom({ conversationId, myId, isBuyer, partnerName, listingTi
       const { error: dbError } = await createBrowserSupabase().rpc("send_message", { p_conversation_id: conversationId, p_body: text });
       if (dbError) throw dbError;
       setBody(""); await reload();
-    } catch (err) { setError(err instanceof Error ? err.message : "Could not send your message."); await reload(); }
+    } catch (err) { setError(userFacingError(err, "message")); await reload(); }
     finally { setBusy(false); }
   }
 
@@ -122,7 +123,7 @@ export function ChatRoom({ conversationId, myId, isBuyer, partnerName, listingTi
       const { error: dbError } = await createBrowserSupabase().rpc("make_offer", { p_conversation_id: conversationId, p_amount_lkr: value });
       if (dbError) throw dbError;
       setAmount(""); setNotice("Offer sent. The seller can accept or decline it."); await reload();
-    } catch (err) { setError(err instanceof Error ? err.message : "Could not send the offer."); await reload(); }
+    } catch (err) { setError(userFacingError(err, "message")); await reload(); }
     finally { setBusy(false); }
   }
 
@@ -133,7 +134,7 @@ export function ChatRoom({ conversationId, myId, isBuyer, partnerName, listingTi
       if (dbError) throw dbError;
       setNotice(accept ? "Offer accepted. Arrange collection/payment safely with the buyer; this is NOT a completed purchase." : "Offer declined.");
       await reload(); router.refresh();
-    } catch (err) { setError(err instanceof Error ? err.message : "Could not respond to offer."); }
+    } catch (err) { setError(userFacingError(err, "message")); }
     finally { setBusy(false); }
   }
 
@@ -143,21 +144,21 @@ export function ChatRoom({ conversationId, myId, isBuyer, partnerName, listingTi
       const { error: dbError } = await createBrowserSupabase().rpc("withdraw_offer", { p_offer_id: id });
       if (dbError) throw dbError;
       await reload();
-    } catch (err) { setError(err instanceof Error ? err.message : "Could not withdraw offer."); }
+    } catch (err) { setError(userFacingError(err, "message")); }
     finally { setBusy(false); }
   }
 
   async function toggleBlock() {
     setError("");setNotice("");setBusy(true);
     const { error: dbError } = await createBrowserSupabase().rpc("marketly_set_chat_block", { p_conversation_id: conversationId, p_block: !state.blocked_by_me });
-    if (dbError) setError(dbError.message); else { setNotice(state.blocked_by_me ? "This conversation is unblocked." : "User blocked in this conversation. Chat history is preserved."); await reload(); }
+    if (dbError) setError(userFacingError(dbError, "message")); else { setNotice(state.blocked_by_me ? "This conversation is unblocked." : "User blocked in this conversation. Chat history is preserved."); await reload(); }
     setBusy(false);
   }
 
   async function reportConversation(event: FormEvent) {
     event.preventDefault();setBusy(true);setError("");setNotice("");
     const {error:dbError}=await createBrowserSupabase().rpc("marketly_report_chat",{p_conversation_id:conversationId,p_reason:reportReason,p_details:""});
-    if (dbError) setError(dbError.message); else {setNotice("Report submitted for admin review.");setShowReport(false);}
+    if (dbError) setError(userFacingError(dbError, "message")); else {setNotice("Report submitted for admin review.");setShowReport(false);}
     setBusy(false);
   }
 

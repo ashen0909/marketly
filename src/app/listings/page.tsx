@@ -10,6 +10,11 @@ export const metadata: Metadata = { title: "Browse listings" };
 export default async function ListingsPage({ searchParams }: { searchParams: Promise<{ q?: string; category?: string; location?: string; page?: string }> }) {
   const filters = await searchParams;
   const page = readPage(filters.page);
+  const originQuery = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters)) {
+    if (["q", "category", "location", "page"].includes(key) && typeof value === "string" && value) originQuery.set(key, value);
+  }
+  const returnTo = `/listings${originQuery.size ? `?${originQuery.toString()}` : ""}`;
   const { listings, sample, error, total } = await getListings(filters, page, LIST_PAGE_SIZE);
   return <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
     <h1 className="text-3xl font-extrabold">Browse listings</h1><p className="mb-7 mt-2 text-[#6B7280]">Discover local offers with simple filters.</p>
@@ -22,7 +27,7 @@ export default async function ListingsPage({ searchParams }: { searchParams: Pro
     {sample && <p className="mb-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">Development mode: these are sample items, not real sale offers.</p>}
     {error && <p className="error-text mb-4">{error}</p>}
     <p className="mb-4 text-sm text-[#6B7280]">{total} listings · Page {page}</p>
-    {listings.length ? <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">{listings.map(item=><ListingCard key={item.id} listing={item}/>)}</div> : <div className="rounded-2xl border border-dashed border-stone-300 p-10 text-center">No products found. Try a different search or category.</div>}
+    {listings.length ? <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">{listings.map(item=><ListingCard key={item.id} listing={item} returnTo={returnTo}/>)}</div> : <div className="rounded-2xl border border-dashed border-stone-300 p-10 text-center">No products found. Try a different search or category.</div>}
     <PaginationControls path="/listings" page={page} pages={totalPages(total)} query={{ q: filters.q, category: filters.category, location: filters.location }} />
   </div>;
 }

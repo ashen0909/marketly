@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useRef,useState,type FormEvent,type ChangeEvent} from "react";
+import { userFacingError } from "@/lib/user-facing-error";
 import {useRouter} from "next/navigation";
 import Image from "next/image";
 import {ArrowLeft,ArrowRight,Eye,Save,Trash2} from "lucide-react";
@@ -52,7 +53,7 @@ export function EditListingForm({listing,oldPhotos,existingTitles=[]}:{listing:L
    const response=await fetch(`/api/listings/${listing.id}/photos`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({paths:photos.map(p=>p.storage_path)})});
    const result:{message?:string;reviewRequired?:boolean}=await response.json();if(!response.ok)throw new Error(result.message||"Unable to save photo order");
    savedSnapshot.current=currentSnapshot;setSaved(result.reviewRequired?"Photos updated. Ad sent for admin review.":"Cover and photo order saved.");router.refresh();
-  }catch(e){setError(e instanceof Error?e.message:"Photo save failed");}finally{setBusy("");}}
+  }catch(e){setError(userFacingError(e, "save"));}finally{setBusy("");}}
  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setAttempted(true);
   const invalid=firstInvalidListingField(issues);
   if(invalid||photoError){
@@ -65,7 +66,7 @@ export function EditListingForm({listing,oldPhotos,existingTitles=[]}:{listing:L
    const data=new FormData(e.currentTarget);files.forEach(f=>data.append("images",f));
    const res=await fetch(`/api/listings/${listing.id}`,{method:"PATCH",body:data});const result=await res.json();
    if(!res.ok)throw new Error(result.message||"Could not edit ad");router.push("/dashboard?status=pending");router.refresh();
-  }catch(e){setError(e instanceof Error?e.message:"Unexpected error");}finally{setBusy("");}}
+  }catch(e){setError(userFacingError(e, "save"));}finally{setBusy("");}}
  return <div className="mx-auto max-w-3xl space-y-5">
   {listing.moderation_status==="rejected"&&<div className="rounded-2xl border border-red-200 bg-red-50 p-5"><h2 className="font-bold text-red-900">Admin requested changes</h2><p className="mt-2 text-sm text-red-800">{listing.moderation_note||"Review your details and correct the advertisement."}</p><p className="mt-2 text-xs text-red-700">Editing and resubmitting this ad does not consume a new posting slot.</p></div>}
   <form ref={formRef} onSubmit={submit} noValidate className="space-y-5 rounded-2xl border bg-white p-6">

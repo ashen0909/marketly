@@ -1,5 +1,6 @@
 "use client";
 import {useState} from "react";
+import { userFacingError } from "@/lib/user-facing-error";
 import {useRouter} from "next/navigation";
 import Link from "next/link";
 import {useMarketlyUi} from "@/components/market/marketly-ui-provider";
@@ -9,8 +10,8 @@ export function DraftActions({id}:{id:string}) {
   if(!await confirm({title:"Delete unfinished draft?",description:"The draft and its stored photos will be removed. This cannot be undone.",confirmLabel:"Delete draft",destructive:true}))return;
   setBusy(true);setError("");try{
    const res=await fetch(`/api/listing-drafts/${id}`,{method:"DELETE"});const data=await res.json();
-   if(!res.ok)throw new Error(data.message||"Unable to delete draft");toast("Draft deleted","success");router.refresh();
-  }catch(e){setError(e instanceof Error?e.message:"Unable to delete draft");}finally{setBusy(false);}
+   if(!res.ok)throw new Error(userFacingError(data.message, "save"));toast("Draft deleted","success");router.refresh();
+  }catch(e){setError(userFacingError(e, "save"));}finally{setBusy(false);}
  }
  return <div className="flex flex-wrap items-center gap-2">
   <Link href={`/sell/new?draft=${id}`} className="rounded-lg bg-[#B88746] px-3 py-2 text-sm font-bold text-white">Continue editing</Link>

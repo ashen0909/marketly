@@ -46,7 +46,7 @@ export default async function HomePage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4"><h2 className="text-2xl font-extrabold tracking-tight">Fresh listings</h2><Link href="/listings" className="flex items-center gap-1 text-sm font-semibold text-[#A3722F]">View all <ArrowRight className="size-4"/></Link></div>
       {sample && <p className="mb-4 rounded-xl bg-[#FFF7EA] px-4 py-3 text-sm text-[#745022]"><Sparkles className="mr-2 inline size-4"/> Sample products are for UI preview only — not real sale offers.</p>}
       {error && <p className="error-text mb-4">{error}</p>}
-      {listings.length ? <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">{listings.slice(0, 8).map((listing) => <ListingCard key={listing.id} listing={listing}/>)}</div> : <div className="rounded-2xl border border-dashed p-8 text-center text-[#68707C]">No published listings yet. Be the first seller!</div>}
+      {listings.length ? <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">{listings.slice(0, 8).map((listing) => <ListingCard key={listing.id} listing={listing} returnTo="/"/>)}</div> : <div className="rounded-2xl border border-dashed p-8 text-center text-[#68707C]">No published listings yet. Be the first seller!</div>}
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-xs text-[#68707C]"><BadgeCheck className="size-4" /> Clear pricing <CheckCircle2 className="size-4" /> No hidden seller commission <MapPin className="size-4" /> Across Sri Lanka</div>
     </section>
     <RecentlyViewedSection />

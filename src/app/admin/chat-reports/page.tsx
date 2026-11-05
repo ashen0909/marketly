@@ -21,7 +21,7 @@ export default async function AdminChatReportsPage({ searchParams }: { searchPar
     <Link href="/admin" className="text-sm font-semibold text-[#85602A]">← Admin overview</Link>
     <h1 className="mt-5 text-3xl font-extrabold">Reported conversations</h1>
     <p className="mt-2 text-sm text-stone-500">Restricted to admins. Reports are reviewed without exposing private chat contents on this screen.</p>
-    {error && <p role="alert" className="mt-5 text-red-700">Failed to load reports: {error.message}</p>}
+    {error && <p role="alert" className="mt-5 text-red-700">Chat reports could not load. Please refresh and try again.</p>}
     <div className="mt-6 space-y-3">{(data??[]).map(r=><article key={r.id} className="rounded-2xl border bg-white p-5">
       <p className="text-sm font-bold">{r.reason.toUpperCase()} · {r.status}</p>
       <p className="mt-1 text-xs text-stone-500">{new Date(r.created_at).toLocaleString("en-LK")}</p>

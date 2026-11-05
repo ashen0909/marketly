@@ -5,6 +5,7 @@ import { FavoritesProvider } from "@/components/market/favorites-provider";
 import { MarketlyUiProvider } from "@/components/market/marketly-ui-provider";
 import { MobileNavigation } from "@/components/market/mobile-navigation";
 import { ConnectivityNotice } from "@/components/market/connectivity-notice";
+import { BrowsePositionMemory } from "@/components/market/return-navigation";
 import { hasSupabaseConfig } from "@/lib/supabase/server";
 import "./globals.css";
 
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <MarketlyUiProvider><FavoritesProvider>
     <SiteHeader />
     <MobileNavigation />
+    <BrowsePositionMemory />
     <ConnectivityNotice />
     {demo && <div className="bg-[#FFF3DB] px-4 py-2 text-center text-xs font-medium text-[#6F4E20]" role="status">DEVELOPMENT PREVIEW — sample products only. Configure Supabase to activate accounts and real listings.</div>}
     <main id="main-content">{children}</main>

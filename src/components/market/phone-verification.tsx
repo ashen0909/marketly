@@ -1,5 +1,6 @@
 "use client";
 import {useState, type FormEvent} from "react";
+import { userFacingError } from "@/lib/user-facing-error";
 import {createBrowserSupabase} from "@/lib/supabase/browser";
 
 /** Uses Supabase Auth's phone-change challenge, not a client-side "verified" flag. */
@@ -11,13 +12,13 @@ export function PhoneVerification(){
       if(!/^\+94[1-9]\d{8}$/.test(phone))throw new Error("Use +94XXXXXXXXX (Sri Lankan mobile number).");
       const {error}=await createBrowserSupabase().auth.updateUser({phone});if(error)throw new Error(error.message);
       setStage("otp");setMessage("If your project's SMS provider is configured, an OTP has been sent.");
-    }catch(e){setMessage(e instanceof Error?e.message:"OTP request failed");}finally{setBusy(false);}
+    }catch(e){setMessage(userFacingError(e, "login"));}finally{setBusy(false);}
   }
   async function confirm(e:FormEvent){e.preventDefault();setBusy(true);setMessage("");
     try{const {error}=await createBrowserSupabase().auth.verifyOtp({phone,token,type:"phone_change"});
       if(error)throw new Error(error.message);
       setStage("verified");setMessage("Phone verification succeeded through Supabase Auth.");
-    }catch(e){setMessage(e instanceof Error?e.message:"Verification failed");}finally{setBusy(false);}
+    }catch(e){setMessage(userFacingError(e, "login"));}finally{setBusy(false);}
   }
   return <div className="mt-6 rounded-2xl border bg-white p-6">
     <h2 className="text-lg font-bold">Verify phone via SMS OTP</h2>

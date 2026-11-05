@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { userFacingError } from "@/lib/user-facing-error";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 export function ReviewChatReport({ id }: { id: string }) {
@@ -11,7 +12,7 @@ export function ReviewChatReport({ id }: { id: string }) {
     if (busy || done) return;
     setBusy(true); setError("");
     const { error: dbError } = await createBrowserSupabase().rpc("marketly_review_chat_report", { p_report_id: id, p_status: status });
-    if (dbError) setError(dbError.message); else {setDone(true);router.refresh();}
+    if (dbError) setError(userFacingError(dbError, "general")); else {setDone(true);router.refresh();}
     setBusy(false);
   }
   return <div className="flex flex-wrap gap-2">

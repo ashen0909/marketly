@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { AlertTriangle, CheckCircle2, Info, X } from "lucide-react";
+import { userFacingError } from "@/lib/user-facing-error";
 
 type ConfirmRequest = {
   title: string; description: string; confirmLabel?: string; cancelLabel?: string; destructive?: boolean;
@@ -34,7 +35,7 @@ export function MarketlyUiProvider({ children }: { children: ReactNode }) {
 
   const toast = useCallback((text: string, kind: ToastType = "info") => {
     const id = ++count.current;
-    setMessages(old => [...old.slice(-3), { id, text, kind }]);
+    setMessages(old => [...old.slice(-3), { id, text: kind === "error" ? userFacingError(text) : text, kind }]);
     window.setTimeout(() => setMessages(old => old.filter(msg => msg.id !== id)), 4800);
   }, []);
 

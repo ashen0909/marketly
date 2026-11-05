@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { userFacingError } from "@/lib/user-facing-error";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -109,7 +110,7 @@ export function SellForm({ canPublish, quotaUsed, draft, existingTitles = [] }: 
       savedSnapshot.current=currentSnapshot;
       setSaved("Draft saved with selected photos. No posting quota used.");
       router.replace(`/sell/new?draft=${id}`, { scroll: false });router.refresh();
-    } catch (e) { setError(e instanceof Error ? e.message : "Could not save draft"); }
+    } catch (e) { setError(userFacingError(e, "save")); }
     finally { setBusy(""); }
   }
   async function handlePublish(event: FormEvent<HTMLFormElement>) {
@@ -132,7 +133,7 @@ export function SellForm({ canPublish, quotaUsed, draft, existingTitles = [] }: 
       const result: { message?: string } = await response.json();
       if (!response.ok) throw new Error(result.message || "Could not submit ad");
       router.push("/dashboard?published=1");router.refresh();
-    } catch (e) { setError(e instanceof Error ? e.message : "Could not submit ad"); }
+    } catch (e) { setError(userFacingError(e, "save")); }
     finally {setBusy("");}
   }
   return <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">

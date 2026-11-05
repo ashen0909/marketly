@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { userFacingError } from "@/lib/user-facing-error";
 import { useRouter } from "next/navigation";
 import { MessageCircle } from "lucide-react";
 import { createBrowserSupabase, hasSupabaseConfig } from "@/lib/supabase/browser";
@@ -22,7 +23,7 @@ export function StartChatButton({ listingId, sellerId, sample }: { listingId: st
       const { data, error: dbError } = await supabase.rpc("start_conversation", { p_listing_id: listingId });
       if (dbError) throw dbError;
       router.push(`/messages/${data}`);
-    } catch (err) { setError(err instanceof Error ? err.message : "Unable to start conversation."); }
+    } catch (err) { setError(userFacingError(err, "message")); }
     finally { setBusy(false); }
   }
   return <div><Button type="button" onClick={start} disabled={busy || !!sample || !sellerId} className="w-full"><MessageCircle className="size-4" />{busy ? "Opening chat..." : "Chat with Seller"}</Button>{error && <p role="alert" className="error-text mt-2">{error}</p>}</div>;
