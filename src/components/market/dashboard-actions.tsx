@@ -20,7 +20,7 @@ export function SellerListingActions({listingId,status,moderationStatus}:{listin
     }catch(e){setError(e instanceof Error?e.message:"Update failed");}finally{setBusy("");}
   }
   return <div className="flex flex-wrap items-center gap-2">
-    {status!=="deleted"&&<Link className="rounded-lg border px-3 py-1.5 text-xs font-semibold hover:bg-stone-50" href={`/sell/${listingId}/edit`}>Edit</Link>}
+    {status!=="deleted"&&<Link className="rounded-lg border px-3 py-1.5 text-xs font-semibold hover:bg-stone-50" href={`/sell/${listingId}/edit`}>{moderationStatus==="rejected"?"Fix & resubmit":"Edit"}</Link>}
     {status==="active" ? <>
       {moderationStatus==="approved"&&<Button size="sm" variant="outline" disabled={!!busy} onClick={()=>update("sold")}>{busy==="sold"?"Saving...":"Mark Sold"}</Button>}
       <Button size="sm" variant="outline" disabled={!!busy} onClick={()=>update("pause")}>Pause</Button>
