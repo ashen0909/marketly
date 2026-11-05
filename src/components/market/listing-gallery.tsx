@@ -13,7 +13,7 @@ type GalleryProps = {
 function WatermarkOverlay({ large = false }: { large?: boolean }) {
   return <div className="pointer-events-none absolute inset-0 select-none" aria-hidden="true">
     <span className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-[25deg] whitespace-nowrap font-black uppercase tracking-[.22em] text-white/25 [text-shadow:0_1px_5px_rgba(0,0,0,.3)] ${large ? "text-2xl sm:text-5xl" : "text-2xl sm:text-4xl"}`}>Marketly</span>
-    <span className="absolute bottom-3 right-3 rounded-md bg-[#24272E]/65 px-2.5 py-1 text-[11px] font-extrabold tracking-wider text-white/90">Marketly</span>
+    <span className="absolute bottom-3 right-3 rounded-md bg-[#24272E]/65 px-2.5 py-1 text-[11px] font-extrabold tracking-wider text-white/90">Marketly.lk</span>
   </div>;
 }
 

@@ -22,7 +22,7 @@ export default async function AdminPage() {
   const {data:isAdmin,error:authError}=await db.rpc("marketly_is_admin");
   if(authError||!isAdmin)redirect("/dashboard");
 
-  const [ads, reports, requests, logs, approved, simulated, sandbox] = await Promise.all([
+  const [ads, reports, requests, logs, approved, simulated, sandbox, chatReports] = await Promise.all([
     db.from("listings").select("id,title,description,seller_id,price_lkr,published_at,moderation_status,status,category,location,condition,is_negotiable").eq("moderation_status","pending").eq("status","active").order("published_at",{ascending:false}).limit(100),
     db.from("listing_reports").select("id,listing_id,reason,details,status,created_at").eq("status","open").order("created_at",{ascending:false}).limit(100),
     db.from("seller_verification_requests").select("id,seller_id,kind,details,status,created_at").eq("status","pending").order("created_at",{ascending:false}).limit(100),
@@ -30,6 +30,7 @@ export default async function AdminPage() {
     db.from("listings").select("id",{head:true,count:"exact"}).eq("status","active").eq("moderation_status","approved"),
     db.from("marketly_test_orders").select("id,amount_lkr,created_at").order("created_at",{ascending:false}).limit(100),
     db.from("marketly_sandbox_payments").select("id,kind,status,amount_lkr,created_at").order("created_at",{ascending:false}).limit(100),
+    db.from("marketly_chat_reports").select("id", { head: true, count: "exact" }).eq("status", "open"),
   ]);
   const pending=(ads.data??[]) as PendingAd[];
   const photosResult=pending.length ? await db.from("listing_images").select("listing_id,storage_path,preview_storage_path,position").in("listing_id",pending.map(x=>x.id)).order("position") : {data:[] as AdPhoto[],error:null};
@@ -38,10 +39,11 @@ export default async function AdminPage() {
   const sellerNames=new Map((sellerResult.data??[]).map(x=>[x.id,x.display_name]));
   const photoMap=new Map<string,AdPhoto[]>();
   for (const p of (photosResult.data??[]) as AdPhoto[]) photoMap.set(p.listing_id,[...(photoMap.get(p.listing_id)??[]),p]);
-  const errors=[ads.error,reports.error,requests.error,logs.error,photosResult.error,sellerResult.error].filter(Boolean);
+  const errors=[ads.error,reports.error,requests.error,logs.error,photosResult.error,sellerResult.error,chatReports.error].filter(Boolean);
   const testValue=(simulated.data??[]).reduce((total,order)=>total+Number(order.amount_lkr),0);
 
   return <main className="mx-auto max-w-7xl space-y-10 px-4 py-10 sm:px-6">
+    <a href="/admin/chat-reports" className="inline-block rounded-xl border border-[#CFA35E] px-4 py-2 text-sm font-bold text-[#80581B]">Review reported chats ({chatReports.count ?? 0} open) →</a>
     <header className="rounded-3xl bg-[#24272E] px-6 py-8 text-white sm:px-9"><div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-sm font-bold uppercase tracking-[.18em] text-[#E0BB7D]">Administration · Marketly</p><h1 className="mt-2 text-3xl font-extrabold sm:text-4xl">Marketplace control center</h1><p className="mt-2 max-w-2xl text-sm text-white/70">Review new ads with actual product photos, respond to reports and manage seller trust.</p></div><div className="rounded-xl bg-white/10 p-3"><ShieldCheck className="size-9 text-[#E0BB7D]"/></div></div>
     <div className="mt-6 flex flex-wrap gap-3 text-xs"><span className="rounded-full border border-white/20 px-3 py-1">Admin-only area</span><span className="rounded-full border border-white/20 px-3 py-1">Actions recorded in audit log</span><span className="rounded-full border border-amber-300/30 bg-amber-200/10 px-3 py-1 text-amber-100">Billing TEST MODE</span></div></header>
     {errors.length>0 && <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-900">Some admin information could not load. Check Supabase RLS and SQL migrations 004/005. {errors.map(e=>e?.message).join(" · ")}</p>}
