@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   if (tokenHash && type && ["email", "signup", "recovery", "invite", "magiclink", "email_change"].includes(type)) {
     const supabase = await createServerSupabase();
     const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as EmailOtpType });
-    if (!error) return NextResponse.redirect(new URL("/dashboard?confirmed=1", url.origin));
+    if (!error) return NextResponse.redirect(new URL(type === "recovery" ? "/reset-password" : "/profile?confirmed=1", url.origin));
   }
   return NextResponse.redirect(new URL("/login?error=confirmation", url.origin));
 }

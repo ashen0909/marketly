@@ -2,13 +2,14 @@
 import {useState} from "react";
 import {useRouter} from "next/navigation";
 import Link from "next/link";
+import {useMarketlyUi} from "@/components/market/marketly-ui-provider";
 export function DraftActions({id}:{id:string}) {
- const [busy,setBusy]=useState(false);const [error,setError]=useState("");const router=useRouter();
+ const [busy,setBusy]=useState(false);const [error,setError]=useState("");const router=useRouter();const {confirm,toast}=useMarketlyUi();
  async function remove() {
-  if(!window.confirm("Delete this unfinished draft and its stored photos? This cannot be undone."))return;
+  if(!await confirm({title:"Delete unfinished draft?",description:"The draft and its stored photos will be removed. This cannot be undone.",confirmLabel:"Delete draft",destructive:true}))return;
   setBusy(true);setError("");try{
    const res=await fetch(`/api/listing-drafts/${id}`,{method:"DELETE"});const data=await res.json();
-   if(!res.ok)throw new Error(data.message||"Unable to delete draft");router.refresh();
+   if(!res.ok)throw new Error(data.message||"Unable to delete draft");toast("Draft deleted","success");router.refresh();
   }catch(e){setError(e instanceof Error?e.message:"Unable to delete draft");}finally{setBusy(false);}
  }
  return <div className="flex flex-wrap items-center gap-2">

@@ -3,7 +3,8 @@ import { createServerSupabase, hasSupabaseConfig } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const safeNext = "/dashboard"; // Do not allow open redirects through the query string.
+  const requested = url.searchParams.get("next");
+  const safeNext = requested === "/profile" ? "/profile?welcome=1" : requested === "/reset-password" ? "/reset-password" : "/dashboard"; // Explicit allowlist, no open redirects.
   if (!hasSupabaseConfig()) return NextResponse.redirect(new URL("/login", url.origin));
   const code = url.searchParams.get("code");
   if (code) {
