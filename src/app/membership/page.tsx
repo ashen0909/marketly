@@ -4,15 +4,19 @@ import { ArrowRight, BadgeCheck, CheckCircle2, CircleHelp, Crown, ImagePlus, Loc
 import { formatLkr, marketlyConfig } from "@/lib/config";
 import { buttonVariants } from "@/components/ui/button";
 import { GoBackLink } from "@/components/market/return-navigation";
+import { createServerSupabase,hasSupabaseConfig } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Pricing & memberships" };
 
 const freeBenefits = ["3 free advertisements each calendar month", "First 5 photos included on every ad", "Buyer–seller chat, offers and favourites", "No product-sale commission"];
 const businessBenefits = ["3 bonus advertisement credits for 30 days", "Keep your regular 3 free monthly ads", "Business storefront & analytics planned", "No paid identity-verification badge"];
 
-export default function MembershipPage() {
+export default async function MembershipPage() {
+  let ownerBenefits=false;
+  if(hasSupabaseConfig()) {const db=await createServerSupabase();const {data:{user}}=await db.auth.getUser();if(user){const {data}=await db.rpc("marketly_is_owner");ownerBenefits=!!data;}}
   return <main className="marketly-pricing-page mx-auto max-w-6xl px-4 pb-16 pt-6 sm:px-6">
     <div className="mb-5"><GoBackLink fallback="/" label="Back"/></div>
+    {ownerBenefits&&<div className="mb-5 rounded-2xl border border-[#DFC99B] bg-[#FFFAF0] p-5 text-sm text-[#795622]"><strong>Owner / Super Admin — Free benefits enabled.</strong> Unlimited ad postings and up to 12 photos per listing are free. Owner can promote approved own ads from Seller Dashboard at no cost. Business membership is an owner-level entitlement; actual business storefront and analytics are not launched yet.</div>}
     <section className="relative overflow-hidden rounded-[2rem] border border-[#E3DFD4] bg-gradient-to-br from-[#FFFEFA] via-[#FDF7E9] to-[#F6E8D0] px-5 py-9 shadow-[0_18px_60px_rgba(72,50,20,.07)] sm:px-10 sm:py-12">
       <div className="pointer-events-none absolute -right-12 -top-20 size-60 rounded-full bg-[#F3E3C7]/50 blur-3xl" aria-hidden="true"/>
       <div className="pointer-events-none absolute -bottom-20 left-1/4 size-48 rounded-full bg-[#F2D79F]/40 blur-3xl" aria-hidden="true"/>

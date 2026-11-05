@@ -18,8 +18,8 @@ type Existing = { kind: "existing"; path: string; src: string; id: string };
 type Fresh = { kind: "new"; file: File; src: string; id: string };
 type Photo = Existing | Fresh;
 
-export function SellForm({ canPublish, quotaUsed, draft, existingTitles = [] }: {
-  canPublish: boolean; quotaUsed: number; draft?: SavedDraft | null; existingTitles?: string[];
+export function SellForm({ canPublish, quotaUsed, ownerBenefits=false, draft, existingTitles = [] }: {
+  canPublish: boolean; quotaUsed: number; ownerBenefits?: boolean; draft?: SavedDraft | null; existingTitles?: string[];
 }) {
   const router = useRouter();
   const savedSnapshot = useRef<string>(JSON.stringify({title:draft?.title??"",description:draft?.description??"",price:draft?.price_lkr??0,category:draft?.category??"",location:draft?.location??"",condition:draft?.condition??"",negotiable:!!draft?.is_negotiable,photoIds:draft?.image_paths??[]}));
@@ -50,10 +50,11 @@ export function SellForm({ canPublish, quotaUsed, draft, existingTitles = [] }: 
     window.addEventListener("beforeunload",warn);
     return ()=>window.removeEventListener("beforeunload",warn);
   },[currentSnapshot]);
-  const remaining = Math.max(0, marketlyConfig.freeAdsPerCalendarMonth - quotaUsed);
+  const photoLimit = ownerBenefits ? marketlyConfig.maxImagesPerListing : marketlyConfig.freeImagesPerListing;
+  const remaining = ownerBenefits ? Number.MAX_SAFE_INTEGER : Math.max(0, marketlyConfig.freeAdsPerCalendarMonth - quotaUsed);
   const duplicate = useMemo(() => existingTitles.some(item => sameTitle(item, title)), [existingTitles, title]);
   const issues = useMemo(() => listingFieldIssues({
-    title, description, price, category, location, condition, photoCount: photos.length, duplicate,
+    title, description, price, category, location, condition, photoCount: photos.length, maxPhotoCount: photoLimit, duplicate,
   }), [title, description, price, category, location, condition, photos.length, duplicate]);
   const markTouched = (field: ListingFieldName) => setTouched(previous => ({ ...previous, [field]: true }));
   const visibleIssue = (field: ListingFieldName) =>
@@ -65,7 +66,7 @@ export function SellForm({ canPublish, quotaUsed, draft, existingTitles = [] }: 
     setError(""); setSaved(""); setPhotoError(""); markTouched("photos");
     const next = Array.from(event.target.files ?? []);
     event.target.value = "";
-    if (photos.length + next.length > 5) { setPhotoError("Maximum five photos until real paid uploads are available. Remove a photo first."); return; }
+    if (photos.length + next.length > photoLimit) { setPhotoError(`Maximum ${photoLimit} photos for this account. Remove a photo first.`); return; }
     for (const file of next) {
       if (!(marketlyConfig.imageMimeTypes as readonly string[]).includes(file.type) ||
           file.size < 1 || file.size > marketlyConfig.maxImageBytes) {
@@ -163,8 +164,8 @@ export function SellForm({ canPublish, quotaUsed, draft, existingTitles = [] }: 
         aria-invalid={visibleIssue("description")?.severity==="error"} aria-describedby={visibleIssue("description")?"description-feedback":undefined}
         className="field-control min-h-[145px]" minLength={20} maxLength={2500} placeholder="Condition, known defects, accessories, pickup and delivery details" required/>
         <ListingFieldFeedback id="description-feedback" issue={visibleIssue("description")}/></div>
-      <section className="space-y-3"><div><h3 className="font-bold">Product photos</h3><p className="text-xs text-stone-500">Up to 5 free photos now · Rs.100 for each extra photo after real payments launch · The first image is the cover.</p></div>
-        <label htmlFor="photo-picker" className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#DCD2C3] bg-[#FBFAF8] p-6 hover:bg-[#F8F3EB]"><ImagePlus className="size-7 text-[#A3722F]"/><strong>Add photos</strong><span className="text-xs text-stone-500">JPG / PNG / WEBP · 5 MB each · {photos.length}/5</span></label>
+      <section className="space-y-3"><div><h3 className="font-bold">Product photos</h3><p className="text-xs text-stone-500">{ownerBenefits?"Owner benefit: up to 12 product photos free. The first image is the cover.":"Up to 5 free photos now · Rs.100 for each extra photo after real payments launch · The first image is the cover."}</p></div>
+        <label htmlFor="photo-picker" className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#DCD2C3] bg-[#FBFAF8] p-6 hover:bg-[#F8F3EB]"><ImagePlus className="size-7 text-[#A3722F]"/><strong>Add photos</strong><span className="text-xs text-stone-500">JPG / PNG / WEBP · 5 MB each · {photos.length}/{photoLimit}</span></label>
         <input id="photo-picker" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={addPhotos} className="sr-only" aria-label="Add product photos"
           aria-invalid={currentPhotoIssue?.severity==="error"} aria-describedby={currentPhotoIssue?"photos-feedback":undefined}/>
         <ListingFieldFeedback id="photos-feedback" issue={currentPhotoIssue}/>
@@ -182,7 +183,7 @@ export function SellForm({ canPublish, quotaUsed, draft, existingTitles = [] }: 
       <p className="text-xs text-stone-500">Saving a draft never uses a posting credit. On submission, a free credit is used once; resubmitting a rejected ad does not use another.</p>
     </form>
     <aside className="space-y-4">
-      <div className="rounded-2xl border bg-white p-5"><h3 className="font-bold">Your posting allowance</h3><p className="mt-2 text-3xl font-extrabold">{remaining} <span className="text-sm font-normal text-stone-500">free ads remaining</span></p><p className="mt-2 text-xs text-stone-500">Three free ads each calendar month (Asia/Colombo). Real paid credits remain disabled.</p></div>
+      <div className="rounded-2xl border bg-white p-5"><h3 className="font-bold">Your posting allowance</h3><p className="mt-2 text-3xl font-extrabold">{ownerBenefits?"Unlimited":remaining} <span className="text-sm font-normal text-stone-500">{ownerBenefits?"Owner free ads":"free ads remaining"}</span></p><p className="mt-2 text-xs text-stone-500">{ownerBenefits?"Owner benefit: monthly posting fee waived. Ads still require independent admin review.":"Three free ads each calendar month (Asia/Colombo). Real paid credits remain disabled."}</p></div>
       <div className="rounded-2xl bg-[#F8F5EE] p-5"><h3 className="flex items-center gap-2 font-bold"><ShieldAlert className="size-5 text-[#A3722F]"/> Seller safety</h3><p className="mt-2 text-sm text-stone-600">Use genuine photos, disclose defects and never share OTP, card PIN or banking passwords.</p></div>
       {preview&&<section className="overflow-hidden rounded-2xl border bg-white" aria-label="Buyer preview"><div className="bg-[#24272E] p-3 text-xs font-bold text-white">PREVIEW ONLY — not publicly listed</div>
         {photos.length>0&&<div className="relative aspect-[1.5]"><Image src={photos[0].src} alt="Preview cover" fill unoptimized className="object-cover"/></div>}

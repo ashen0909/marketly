@@ -10,8 +10,8 @@ export default async function AdminChatReportsPage({ searchParams }: { searchPar
   const db = await createServerSupabase();
   const { data: { user } } = await db.auth.getUser();
   if (!user) redirect("/login");
-  const { data: isAdmin } = await db.rpc("marketly_is_admin");
-  if (!isAdmin) notFound();
+  const { data: canReview } = await db.rpc("marketly_admin_has_permission", { p_permission: "chat_reports" });
+  if (!canReview) notFound();
   const page = readPage((await searchParams).page);
   const { from, to } = pageRange(page);
   const { data, count, error } = await db.from("marketly_chat_reports")
