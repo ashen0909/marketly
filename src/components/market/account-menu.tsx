@@ -20,7 +20,11 @@ export function AccountMenu({ displayName, email, adminRole="user" }: AccountMen
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => { setOpen(false); }, [pathname]);
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => { if (active) setOpen(false); });
+    return () => { active = false; };
+  }, [pathname]);
   useEffect(() => {
     if (!open) return;
     function onOutside(event: PointerEvent) {

@@ -5,6 +5,7 @@ import { ArrowLeft, BadgeCheck, ShieldCheck } from "lucide-react";
 import { createServerSupabase, hasSupabaseConfig } from "@/lib/supabase/server";
 import { createAdminStorageBucket } from "@/lib/supabase/storage-admin";
 import { ProfileForm } from "@/components/market/profile-form";
+import { normalizeAdminAccess } from "@/lib/admin-access";
 import type { ProfileDetails } from "@/lib/profile-completion";
 
 export const metadata: Metadata = { title: "My profile" };
@@ -15,10 +16,12 @@ export default async function ProfilePage() {
   const db = await createServerSupabase();
   const { data: { user } } = await db.auth.getUser();
   if (!user) redirect("/login");
-  const [{ data: publicProfile },{ data: personal }] = await Promise.all([
+  const [{ data: publicProfile },{ data: personal }, { data: adminAccess }] = await Promise.all([
     db.from("profiles").select("display_name,identity_verified,created_at").eq("id",user.id).maybeSingle(),
     db.from("marketly_profile_details").select("full_name,phone,district,city,about,contact_preference,photo_path,email_notifications").eq("user_id",user.id).maybeSingle(),
+    db.rpc("marketly_admin_access"),
   ]);
+  const isOwner = normalizeAdminAccess(adminAccess).role === "owner";
   const name=publicProfile?.display_name || (typeof user.user_metadata?.display_name==="string"?user.user_metadata.display_name:"") || "Marketly member";
   let photoUrl: string | null = null;
   if (personal?.photo_path) {
@@ -29,11 +32,12 @@ export default async function ProfilePage() {
     <div className="mx-auto max-w-4xl">
       <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm font-semibold text-[#8C632B] hover:underline"><ArrowLeft className="size-4"/> Seller dashboard</Link>
       <div className="mb-7 mt-5 flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#9C6F2E]">My account</p><h1 className="mt-2 text-3xl font-extrabold text-[#24272E] sm:text-4xl">My Profile</h1><p className="mt-2 max-w-xl text-sm text-[#68707C]">All your details, verification progress and security settings in one place. Personal information stays private.</p></div>
+        {isOwner && <span className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-4 py-2 text-sm font-bold text-amber-900"><ShieldCheck className="size-4"/> Marketly Owner · Verification upload exempt</span>}
         {publicProfile?.identity_verified && <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-800"><BadgeCheck className="size-4"/> Identity verified</span>}
       </div>
       <ProfileForm initialName={name} initialDetails={personal as ProfileDetails | null} initialPhotoUrl={photoUrl}
         email={user.email || ""} emailVerified={!!user.email_confirmed_at} verified={!!publicProfile?.identity_verified}/>
-      <div className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border bg-white p-4"><ShieldCheck className="size-5 text-[#A3722F]"/><p className="flex-1 text-sm text-stone-600">Identity verification is a separate admin-reviewed process. A business membership never grants a verified badge.</p><Link href="/verification" className="text-sm font-bold text-[#926829] underline">Verification history</Link></div>
+      <div className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border bg-white p-4"><ShieldCheck className="size-5 text-[#A3722F]"/><p className="flex-1 text-sm text-stone-600">Identity verification is a separate admin-reviewed process. Owner-role benefits are exempt from document upload but do not imply personal identity verification. A business membership never grants a verified badge.</p><Link href="/verification" className="text-sm font-bold text-[#926829] underline">Verification history</Link></div>
     </div>
   </div>;
 }

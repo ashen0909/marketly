@@ -55,7 +55,7 @@ export function SellForm({ canPublish, quotaUsed, ownerBenefits=false, draft, ex
   const duplicate = useMemo(() => existingTitles.some(item => sameTitle(item, title)), [existingTitles, title]);
   const issues = useMemo(() => listingFieldIssues({
     title, description, price, category, location, condition, photoCount: photos.length, maxPhotoCount: photoLimit, duplicate,
-  }), [title, description, price, category, location, condition, photos.length, duplicate]);
+  }), [title, description, price, category, location, condition, photos.length, duplicate, photoLimit]);
   const markTouched = (field: ListingFieldName) => setTouched(previous => ({ ...previous, [field]: true }));
   const visibleIssue = (field: ListingFieldName) =>
     attempted || touched[field] || issues[field]?.severity === "warning" ? issues[field] : undefined;

@@ -34,12 +34,13 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!hasSupabaseConfig()) return;
     const supabase = createBrowserSupabase();
-    void refresh();
+    let active = true;
+    queueMicrotask(() => { if (active) void refresh(); });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") { setFavorites(new Set()); setSignedIn(false); }
       if (event === "SIGNED_IN") { queueMicrotask(() => { void refresh(); }); }
     });
-    return () => subscription.unsubscribe();
+    return () => { active = false; subscription.unsubscribe(); };
   }, [refresh]);
 
   const toggle = useCallback(async (listingId: string) => {

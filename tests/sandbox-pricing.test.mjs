@@ -7,9 +7,9 @@ const root=process.cwd();
 function load(name){
  const source=fs.readFileSync(path.join(root,'src/lib',name+'.ts'),'utf8');
  const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
- const module={exports:{}};
- new Function('require','module','exports',js)((name)=>name==='./config'?load('config'):null,module,module.exports);
- return module.exports;
+ const loadedModule={exports:{}};
+ new Function('require','module','exports',js)((name)=>name==='./config'?load('config'):null,loadedModule,loadedModule.exports);
+ return loadedModule.exports;
 }
 const {quoteSandboxOrder}=load('sandbox-pricing');
 test('extra post costs 100',()=>assert.equal(quoteSandboxOrder({kind:'extra_ad'}),100));
