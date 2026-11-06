@@ -73,12 +73,17 @@ export function BackToBrowse({ isOwner = false, returnTo = null }: { isOwner?: b
   const explicit = safeListingReturn(returnTo);
   const [href, setHref] = useState(explicit ?? (isOwner ? "/dashboard" : "/listings"));
   useEffect(() => {
-    // The product link's ?from is authoritative, including after refresh.
-    if (explicit) { setHref(explicit); return; }
-    try {
-      const previous = safePath(sessionStorage.getItem(DETAIL_SOURCE_KEY));
-      setHref(previous ?? (isOwner ? "/dashboard" : savedBrowse()));
-    } catch { setHref(isOwner ? "/dashboard" : "/listings"); }
+    let active = true;
+    // Explicit ?from wins; fall back to remembered navigation when available.
+    let next = explicit ?? (isOwner ? "/dashboard" : "/listings");
+    if (!explicit) {
+      try {
+        const previous = safePath(sessionStorage.getItem(DETAIL_SOURCE_KEY));
+        next = previous ?? (isOwner ? "/dashboard" : savedBrowse());
+      } catch { /* session storage blocked */ }
+    }
+    queueMicrotask(() => { if (active) setHref(next); });
+    return () => { active = false; };
   }, [explicit, isOwner]);
   const label = href.startsWith("/dashboard") ? "Back to my ads" :
     href.startsWith("/favorites") ? "Back to saved items" :

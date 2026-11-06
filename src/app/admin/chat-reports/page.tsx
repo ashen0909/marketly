@@ -1,7 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createServerSupabase, hasSupabaseConfig } from "@/lib/supabase/server";
-import { ReviewChatReport } from "@/components/market/review-chat-report";
 import { PaginationControls } from "@/components/market/pagination-controls";
 import { readPage, pageRange, totalPages } from "@/lib/pagination";
 export const dynamic = "force-dynamic";
@@ -26,7 +25,7 @@ export default async function AdminChatReportsPage({ searchParams }: { searchPar
       <p className="text-sm font-bold">{r.reason.toUpperCase()} · {r.status}</p>
       <p className="mt-1 text-xs text-stone-500">{new Date(r.created_at).toLocaleString("en-LK")}</p>
       <p className="mt-2 text-sm">{r.details || "No additional details"}</p>
-      <div className="mt-3"><ReviewChatReport id={r.id}/></div>
+      <Link href={`/admin/chat-reports/${r.id}`} className="mt-3 inline-block rounded-lg bg-[#24272E] px-4 py-2 text-sm font-bold text-white">Open exact report →</Link>
     </article>)}{!error&&!data?.length&&<p className="rounded-xl border p-8">No reports on this page.</p>}</div>
     <PaginationControls path="/admin/chat-reports" page={page} pages={totalPages(count)}/>
   </main>;

@@ -11,10 +11,10 @@ function load(moduleName) {
   let source = fs.readFileSync(file, "utf8");
   source = source.replace('from "./config"', 'from "./config"');
   const cjs = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
-  const module = { exports: {} };
+  const loadedModule = { exports: {} };
   const requireFn = (id) => id === "./config" ? load("config") : (() => { throw new Error("Unexpected module " + id); })();
-  new Function("require", "module", "exports", cjs)(requireFn, module, module.exports);
-  return module.exports;
+  new Function("require", "module", "exports", cjs)(requireFn, loadedModule, loadedModule.exports);
+  return loadedModule.exports;
 }
 const { quoteListingImages } = load("pricing");
 
