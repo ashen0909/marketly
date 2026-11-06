@@ -12,7 +12,6 @@ import { formatLkr } from "@/lib/config";
 type Message = { id: string; sender_id: string; body: string; created_at: string; is_system?: boolean; read_at?: string | null };
 type Offer = { id: string; buyer_id: string; amount_lkr: number; status: "pending" | "accepted" | "declined" | "withdrawn"; created_at: string };
 export type ChatState = { status: string; moderation: string | null; can_send: boolean; blocked_by_me: boolean; blocked_by_other: boolean; expires_at?: string | null };
-const CLOSE_STATE: ChatState = { status: "removed", moderation: null, can_send: false, blocked_by_me: false, blocked_by_other: false };
 const PAGE_SIZE = 30;
 
 export function ChatRoom({ conversationId, myId, isBuyer, partnerName, listingTitle, listingId, initialChatState, initialMessages, initialOffers }: {
@@ -20,6 +19,7 @@ export function ChatRoom({ conversationId, myId, isBuyer, partnerName, listingTi
   initialChatState: ChatState; initialMessages: Message[]; initialOffers: Offer[];
 }) {
   const router = useRouter();
+  const [renderNow] = useState(() => Date.now());
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [offers, setOffers] = useState<Offer[]>(initialOffers);
   const [state, setState] = useState<ChatState>(initialChatState);
@@ -66,7 +66,7 @@ export function ChatRoom({ conversationId, myId, isBuyer, partnerName, listingTi
   useEffect(() => {
     let alive = true;
     const client = createBrowserSupabase();
-    void reload();
+    queueMicrotask(() => { if (alive) void reload(); });
     const channel = client.channel(`marketly-chat-${conversationId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` }, () => { if (alive) void reload(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "offers", filter: `conversation_id=eq.${conversationId}` }, () => { if (alive) void reload(); })
@@ -170,7 +170,7 @@ export function ChatRoom({ conversationId, myId, isBuyer, partnerName, listingTi
     : isSold ? "SOLD — this conversation is closed. The complete chat history is saved. Chat reopens after the seller relists and admin approves."
     : state.status === "deleted" ? "This advertisement was deleted. Chat history is preserved, but new messages are disabled."
     : state.status === "removed" ? "This advertisement is paused. Chat resumes if relisted and approved."
-    : state.expires_at && new Date(state.expires_at).getTime() <= Date.now() ? "This ad has expired. Chat resumes after renewal and admin approval."
+    : state.expires_at && new Date(state.expires_at).getTime() <= renderNow ? "This ad has expired. Chat resumes after renewal and admin approval."
     : "This advertisement is awaiting approval or is unavailable. Chat is temporarily closed.";
   return <div className="mx-auto max-w-5xl px-4 py-7 sm:px-6">
     <Link href="/messages" className="inline-flex items-center gap-2 text-sm font-semibold text-[#8B642B]"><ArrowLeft className="size-4"/>All messages</Link>

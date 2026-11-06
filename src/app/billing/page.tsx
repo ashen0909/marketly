@@ -21,6 +21,10 @@ function readableKind(kind: string) {
   return names[kind] ?? "Sandbox service";
 }
 
+function getBillingRequestTimestamp(): number {
+  return Date.now();
+}
+
 export default async function BillingPage({ searchParams }: { searchParams: Promise<{ listing?: string }> }) {
   if (!hasSupabaseConfig()) redirect("/login");
   const db = await createServerSupabase();
@@ -36,7 +40,9 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   ]);
   const sandboxEnabled = process.env.NODE_ENV === "development" && process.env.MARKETLY_SANDBOX_ENABLED === "true";
   const sandboxCount = sandboxOrders.data?.length ?? 0;
-  const activeCredits = (entitlements.data ?? []).filter(item => new Date(item.ends_at).getTime() > Date.now()).reduce((sum,item) => sum + Math.max(0,(item.credits_total ?? 0)-(item.credits_used ?? 0)),0);
+  // One timestamp per server request keeps both balance and status consistent.
+  const requestNow = getBillingRequestTimestamp();
+  const activeCredits = (entitlements.data ?? []).filter(item => new Date(item.ends_at).getTime() > requestNow).reduce((sum,item) => sum + Math.max(0,(item.credits_total ?? 0)-(item.credits_used ?? 0)),0);
   return <main className="marketly-billing-page mx-auto max-w-5xl px-4 pb-16 pt-6 sm:px-6">
     <GoBackLink fallback="/dashboard" label="Back to seller dashboard"/>
     <header className="relative mt-5 overflow-hidden rounded-3xl border border-[#E5D8C2] bg-gradient-to-br from-[#FFFCF5] via-white to-[#F7ECD8] p-6 sm:p-8">
@@ -59,7 +65,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
     </div>}
     <div className="mt-6"><SandboxCheckout availableListings={adsResult.data ?? []} defaultListingId={listing} enabled={sandboxEnabled}/></div>
     <section className="marketly-surface-card mt-6 p-5 sm:p-7"><div className="flex items-center gap-2"><CheckCircle2 className="size-5 text-[#A4752A]"/><h2 className="text-xl font-bold">Sandbox credits & benefits</h2></div><p className="mt-2 text-sm text-stone-500">These are TEST records. Expired balances are not counted.</p>
-      {!entitlements.data?.length?<p className="marketly-empty-state mt-4">No test credits yet. Try a simulated payment above.</p>:<div className="mt-4 divide-y divide-[#EEE8DC]">{entitlements.data.map(item=>{const active=new Date(item.ends_at).getTime()>Date.now();return <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"><div><strong>{readableKind(item.kind)}</strong><p className="mt-1 text-xs text-stone-500">Expires: {new Date(item.ends_at).toLocaleDateString("en-LK")}</p></div><span className={`rounded-full px-3 py-1 text-xs font-bold ${active?"bg-emerald-50 text-emerald-800":"bg-stone-100 text-stone-500"}`}>{active?(item.credits_total?`${Math.max(0,item.credits_total-item.credits_used)}/${item.credits_total} credits left`:"Test active"):"Expired"}</span></div>})}</div>}
+      {!entitlements.data?.length?<p className="marketly-empty-state mt-4">No test credits yet. Try a simulated payment above.</p>:<div className="mt-4 divide-y divide-[#EEE8DC]">{entitlements.data.map(item=>{const active=new Date(item.ends_at).getTime()>requestNow;return <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"><div><strong>{readableKind(item.kind)}</strong><p className="mt-1 text-xs text-stone-500">Expires: {new Date(item.ends_at).toLocaleDateString("en-LK")}</p></div><span className={`rounded-full px-3 py-1 text-xs font-bold ${active?"bg-emerald-50 text-emerald-800":"bg-stone-100 text-stone-500"}`}>{active?(item.credits_total?`${Math.max(0,item.credits_total-item.credits_used)}/${item.credits_total} credits left`:"Test active"):"Expired"}</span></div>})}</div>}
     </section>
     <section className="marketly-surface-card mt-5 p-5 sm:p-7"><div className="flex items-center gap-2"><CreditCard className="size-5 text-[#A4752A]"/><h2 className="text-xl font-bold">Simulated payment history</h2></div><p className="mt-1 text-sm text-stone-500">For testing only — not business revenue.</p>
       {!sandboxOrders.data?.length?<p className="marketly-empty-state mt-4">No test payments yet.</p>:<div className="mt-4 divide-y divide-[#EEE8DC]">{sandboxOrders.data.map(item=><div key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"><div><p className="font-bold">{readableKind(item.kind)}</p><p className="mt-1 text-xs text-stone-500">{new Date(item.created_at).toLocaleString("en-LK")} · {simulatedStatus(item.status)}</p></div><strong className="text-[#23764C]">{formatLkr(Number(item.amount_lkr))}</strong></div>)}</div>}
